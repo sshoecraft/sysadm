@@ -1,0 +1,61 @@
+#!/bin/bash
+#
+tmp=/tmp/mailme.$$
+DEF="stephen.shoecraft@mckesson.com"
+#
+#echo "0: $0, 1: $1, 2: $2, 3: $3"
+if test $# -lt 1; then
+	echo "usage: mailme <file> [[attachment name] [recipient]]"
+	exit 1
+fi
+FNAME=$1
+if test -z "$2"; then
+	if test `echo $1 | grep -c \.txt$` -eq 0; then
+		TNAME=$1.txt
+	else
+		if test "$2" = "-"; then
+			echo "must specify attachment name when using stdin"
+			exit 1
+		fi
+		TNAME=$2
+	fi
+else
+	TNAME=$2
+fi
+test -z "$TNAME" && TNAME="$1"
+if test "$TNAME" != "-.txt"; then
+	ANAME=`basename $TNAME`
+else
+	ANAME="data.txt"
+fi
+if test -z "$3"; then
+	me=`whoami`
+	while read line
+	do
+		user=`echo $line | awk -F: '{ print $1 }'`
+		if test "$user" = "$me"; then
+			SEA=`echo $line | awk -F: '{ print $5 }' | awk -F, '{ print $5 }'`
+			break;
+		fi
+	done < /etc/passwd
+	if test -z "$SEA"; then
+		if test -n "$DEF"; then
+			SEA="$DEF"
+		else
+			echo "unanble to get mail addr, need to specify"
+			exit 1
+		fi
+	fi
+#	echo "Sending to: $SEA"
+else
+	SEA=$3
+fi
+printf "Subject: %s\n\n" "$ANAME" > $tmp
+if test $(echo "$ANAME" | grep -c '\.zip$' -e '\.tar$' -e '\.tgz$' -e '\.gz$') -gt 0; then
+	uuencode "$FNAME" "$ANAME" >> $tmp
+else
+	cat "$FNAME" | unix2dos | uuencode "$ANAME" >> $tmp
+fi
+#cat $tmp
+cat $tmp | /usr/sbin/sendmail $SEA
+rm -f $tmp

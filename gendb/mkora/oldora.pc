@@ -1,0 +1,190 @@
+
+/*
+*** Embedded SQL file for oracle
+*/
+
+#include <stdio.h> 
+#include <stdlib.h>
+#include <string.h>
+#include <sqlca.h>
+EXEC ORACLE OPTION (INCLUDE="../../lib/sys");
+#include "sys.h"
+
+EXEC SQL BEGIN DECLARE SECTION;
+#define NEED_SQL_ERROR_TEXT
+#include "gendb.h"
+static long sql_return_code;
+#include "oracle.h"
+EXEC SQL END DECLARE SECTION;
+
+int connect_to_db(char *);
+static ITEMLIST get_cols(char *);
+static ITEMLIST get_cons(char *);
+static ITEMLIST get_cons_cols(char *);
+static ITEMLIST get_inds(char *);
+static ITEMLIST get_ind_cols(char *);
+static void sql_not_found(void);
+static void sql_error(void); 
+
+int connect_to_db(char *userid) {
+	sql_return_code = 0;
+	EXEC SQL WHENEVER SQLERROR DO sql_error();
+	EXEC SQL WHENEVER NOT FOUND DO sql_not_found();
+	EXEC SQL CONNECT :userid; 
+	return (sql_return_code == 0 ? 0 : 1);
+}
+
+int set_ro_trans(void) {
+	sql_return_code = 0;
+	EXEC SQL SET TRANSACTION READ ONLY;
+	return (sql_return_code == 0 ? 0 : 1);
+}
+
+int rollback_trans(void) {
+	sql_return_code = 0;
+	EXEC SQL ROLLBACK; 
+	return (sql_return_code == 0 ? 0 : 1);
+}
+
+ITEMLIST get_table_list(void) {
+	ITEMLIST cols;
+
+	sql_return_code = 0;
+	EXEC SQL DECLARE at_cursor CURSOR FOR \
+		SELECT table_name,table_type FROM all_catalog WHERE \
+			owner != 'SYS' AND owner != 'SYSTEM';
+	if (sql_return_code != 0) return 0;
+	sql_return_code = 0;
+	EXEC SQL OPEN at_cursor;
+	if (sql_return_code != 0) return 0;
+	while(1) {
+		sql_return_code = 0;
+		EXEC SQL FETCH at_cursor INTO :at;
+		if (sql_return_code != 0) break;
+		trim(at.table_name);
+		trim(at.table_type);
+		if (strcmp(at.table_type,"TABLE")==0 ||
+		    strcmp(at.table_type,"VIEW")==0) {
+			log_write(LOG_DEBUG,
+				"table name: %s, table_type: %s",
+				at.table_name,at.table_type);
+			cols = get_cols(at.table_name);
+		}
+	}
+	EXEC SQL CLOSE at_cursor;
+	return 0;
+}
+
+ITEMLIST get_table_info(char *name) {
+	ITEMLIST cols;
+
+	cols = get_cols(name);
+	return 0;
+}
+
+static ITEMLIST get_cols(char *name) {
+	struct atc_record atc;
+
+	sql_return_code = 0;
+	EXEC SQL DECLARE atc_cursor CURSOR FOR \
+		SELECT column_name,data_type,data_length,data_precision,\
+			column_id FROM all_tab_columns \
+		WHERE table_name = :name;
+	if (sql_return_code != 0) return 0;
+	sql_return_code = 0;
+	EXEC SQL OPEN atc_cursor;
+	if (sql_return_code != 0) return 0;
+	while(1) {
+		sql_return_code = 0;
+		EXEC SQL FETCH atc_cursor INTO :atc;
+		if (sql_return_code != 0) break;
+		trim(atc.column_name);
+		trim(atc.data_type);
+		log_write(LOG_DEBUG,
+			"column name: %s, data_type: %s, data_length: %d",
+			atc.column_name,atc.data_type,atc.data_length);
+	}
+	EXEC SQL CLOSE atc_cursor;
+	return 0;
+}
+
+static ITEMLIST get_cons(char *table) {
+	struct ac_record ac;
+
+	sql_return_code = 0;
+	EXEC SQL DECLARE ac_cursor CURSOR FOR \
+		SELECT * FROM all_constraints \
+		WHERE table_name = :table;
+	if (sql_return_code != 0) return 0;
+	sql_return_code = 0;
+	EXEC SQL OPEN ac_cursor;
+	if (sql_return_code != 0) return 0;
+	while(1) {
+		sql_return_code = 0;
+		EXEC SQL FETCH ac_cursor INTO :ac;
+		if (sql_return_code != 0) break;
+		trim(ac.constraint_name);
+		trim(ac.owner);
+		log_write(LOG_DEBUG,"cons name: %s, owner: %s, type: %s",
+			ac.constraint_name,ac.owner,ac.constraint_type);
+	}
+	EXEC SQL CLOSE ac_cursor;
+	return 0;
+}
+
+static ITEMLIST get_cons_cols(char *table) {
+	struct acc_record acc;
+
+	sql_return_code = 0;
+	EXEC SQL DECLARE acc_cursor CURSOR FOR \
+		SELECT * FROM all_cons_columns \
+		WHERE table_name = :table;
+	if (sql_return_code != 0) return 0;
+	sql_return_code = 0;
+	EXEC SQL OPEN acc_cursor;
+	if (sql_return_code != 0) return 0;
+	while(1) {
+		sql_return_code = 0;
+		EXEC SQL FETCH acc_cursor INTO :acc;
+		if (sql_return_code != 0) break;
+		trim(acc.table_name);
+		trim(acc.column_name);
+		log_write(LOG_DEBUG,
+			"table name: %s, column name: %s, position: %d",
+			acc.table_name,acc.column_name,acc.position);
+	}
+	EXEC SQL CLOSE acc_cursor;
+	return 0;
+}
+
+/*
+*** Handle errors
+*/
+
+static void sql_error() { 
+	EXEC SQL WHENEVER SQLERROR DO sql_error();
+	strcpy(sql_error_text,sqlca.sqlerrm.sqlerrmc);
+	sql_return_code = sqlca.sqlcode;
+	switch(sqlca.sqlcode) {
+		case -1:
+			switch(sqlca.sqlerrm.sqlerrml) {
+				case 65:
+					sql_return_code = -1001;
+					break;
+			}
+			break;
+		case -1405:
+			sql_return_code = 0;
+			break;
+	}
+	if (sql_return_code != 0) {
+		log_write(LOG_DEBUG,"sql_error: code: %ld: text: %s",
+			sqlca.sqlcode,sqlca.sqlerrm.sqlerrmc);
+	}
+	return;
+}
+
+static void sql_not_found(void) {
+	sql_return_code = 100;
+	return;
+}

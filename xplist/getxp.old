@@ -1,0 +1,8 @@
+#!/bin/sh
+if [ "$1" = "" ]; then
+	echo "usage: getxp <host>"
+	exit 1
+fi
+/usr/local/lib/tools/admscp /usr/local/bin/xplist $1:/tmp/xplist > /dev/null 2>&1
+test $? -ne 0 && exit 1
+/usr/local/lib/tools/admssh $1 "sudo su - root -c \"chmod +x /tmp/xplist; /tmp/xplist; rm -f /tmp/xplist\"" 2>/dev/null

@@ -1,0 +1,94 @@
+#!/bin/bash
+if test $# -lt 2; then
+	echo "usage: cmpsan <sys1> <sys2>"
+	exit 1
+fi
+#
+sys1=$1
+sys2=$2
+IFS=","
+#
+get_info() {
+/usr/local/lib/tools/admssh $sys1 "sudo /usr/local/bin/xplist -d" > /tmp/cs1.tmp 2>/dev/null
+if test $? -ne 0; then
+	echo "error getting info from $sys1"
+	exit 1
+fi
+/usr/local/lib/tools/admssh $sys2 "sudo /usr/local/bin/xplist -d" > /tmp/cs2.tmp 2>/dev/null
+if test $? -ne 0; then
+	echo "error getting info from $sys2"
+	exit 1
+fi
+}
+chkid() {
+rm -f /tmp/shared; touch /tmp/shared
+rm -f $3; touch $3
+while read dev1 b c port1 culdev1 type1 size1 serial1 i j k l m n o p q r s t u v w x y z aa id1 vol1 rest1
+do
+	found=0
+	while read dev2 b c port2 culdev2 type2 size2 serial2 i j k l m n o p q r s t u v w x y z aa id2 vol2 rest2
+	do
+		if test "$id2" = "$id1"; then
+			found=1;
+			break;
+		fi
+	done < $2
+	if test $found -gt 0; then
+		if test `cat /tmp/shared | grep -c $id1` -eq 0; then
+			echo $id1 >> /tmp/shared
+		fi
+	else
+		if test `cat $3 | grep -c $id1` -eq 0; then
+			echo $id1 >> $3
+		fi
+	fi
+done < $1
+}
+dolist() {
+	list=""
+	echo ""
+	echo "Device                    Size        Port   CU:LDev  Type       Serial #"
+	echo "========================================================================="
+	while read id
+	do
+		while read dev1 b c port1 culdev1 type1 size1 serial1 i j k l m n o p q r s t u v w x y z aa id1 vol1
+		do
+			test `echo $type1 | grep -c -e '-CM'` -gt 0 && continue
+			if test "$id1" = "$id"; then
+				printf "%-25s %-11s %-6s %-8s %-10s %s\n" $dev1 $size1 $port1 $culdev1 $type1 $serial1
+				list="$list$dev1 "
+			fi
+		done < $2
+	done < $1
+	if test -n "$list"; then
+		echo "example VG creation commands:"
+		echo "  pvcreate $list"
+		echo "  vgcreate $3 $list"
+		echo "  lvcreate -l 100%FREE -n lvol1 $3"
+	fi
+}
+get_info
+chkid /tmp/cs1.tmp /tmp/cs2.tmp /tmp/sys1.local
+chkid /tmp/cs2.tmp /tmp/cs1.tmp /tmp/sys2.local
+
+# Display shared disks
+if test `cat /tmp/shared | wc -l` -gt 0; then
+	echo ""
+	echo "Disks shared between $sys1 and $sys2:"
+	dolist /tmp/shared /tmp/cs1.tmp vg02
+fi
+
+# Display sys1 local
+if test `cat /tmp/sys1.local | wc -l` -gt 0; then
+	echo ""
+	echo "Disks local to $sys1:"
+	dolist /tmp/sys1.local /tmp/cs1.tmp vg01
+fi
+
+# Display sys2 local
+if test `cat /tmp/sys2.local | wc -l` -gt 0; then
+	echo ""
+	echo "Disks local to $sys2:"
+	dolist /tmp/sys2.local /tmp/cs2.tmp vg01
+fi
+rm -f /tmp/cs1.tmp /tmp/cs2.tmp /tmp/shared /tmp/sys1.local /tmp/sys2.local

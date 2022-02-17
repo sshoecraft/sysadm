@@ -1,0 +1,12 @@
+#!/bin/bash
+test -z "$2" && exit 1
+
+MY="mysql --database=sysadm --user=sysadm_rw --password=sysadm_rw"
+
+n=`echo $1 | awk -F. '{ print $1  }'`
+app=`$MY -N -B -e "select application from mbs where hostname = '$n'"`
+if test -z "$app"; then
+	$MY -e "insert into mbs (hostname,application) values ('$n','$2')"
+else
+	$MY -e "update mbs set application = '$2' where hostname = '$n'"
+fi

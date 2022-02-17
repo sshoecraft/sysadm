@@ -1,0 +1,88 @@
+<!--         RIBCL Sample Script for HP Lights-Out Products          -->
+<!--   Copyright (c) 2013 Hewlett-Packard Development Company, L.P.  -->
+
+<!-- Description: This is a sample XML script to perform the         -->
+<!--         following actions:                                      -->
+<!--	          - simulate physical press of the server power button -->
+<!--	          - simulate physical press and hold of the server     -->
+<!--                power button                                       -->
+<!--	          - cold boot                                          -->
+<!--	          - warm boot                                          -->
+
+<!-- NOTES:                                                          -->
+<!--      - You will need to replace the USER_LOGIN and PASSWORD     -->
+<!--        values with values that are appropriate for your         -->
+<!--        environment.                                             -->
+<!--      - The user must have the virtual power and reset privilege -->
+<!--        to execute this command.                                 -->
+
+<!--        Use CPQLOCFG.EXE ver 4.00 or greater with this script.   -->
+
+<!--        This script was written for iLO 4 firmware version 1.01  -->
+<!--        release.                                                 -->
+
+<!-- Help:                                                           -->               
+<!-- PRESS_PWR_BTN :                                                 -->
+<!--        This PRESS_PWR_BTN command is used to simulate a physical-->
+<!--        press of the server power button.                        -->
+<!-- COLD_BOOT_SERVER :                                              -->
+<!--        The COLD_BOOT_SERVER command forces a cold boot of the   -->
+<!--        server, if the server is currently on.                   -->
+<!-- WARM_BOOT_SERVER :                                              -->
+<!--        The WARM_BOOT_SERVER command forces a warm boot of the   -->  
+<!--        server, if the server is currently on.                   -->
+<!-- HOLD_PWR_BTN :                                                  -->
+<!--        This PRESS_PWR_BTN command is used to simulate a physical-->
+<!--        press and hold of the server power button.               -->
+<!-- NOTE:  The above options should not be used together.           -->
+
+<!--        See "HP Integrated Lights-Out Management Processor       -->
+<!--        Scripting and Command Line Resource Guide" for more      -->
+<!--        information on scripting and the syntax of the RIBCL     -->
+<!--        XML.                                                     -->
+
+<!--        Firmware support information for this script:             -->
+<!--            iLO 4 - All versions.                                -->
+<!--            iLO 3 - All versions.                                -->
+<!--            iLO 2 - All versions.                                -->
+
+<RIBCL VERSION="2.0">
+   <LOGIN USER_LOGIN="adminname" PASSWORD="password">
+      <SERVER_INFO MODE="write">       
+         <PRESS_PWR_BTN/>
+<!--     <COLD_BOOT_SERVER/>                                         -->
+<!--     <WARM_BOOT_SERVER/>                                         -->
+
+<!--        Firmware support information for next tag:                -->
+<!--            iLO 4 - All versions.                                -->
+<!--            iLO 3 - None.                                        -->
+<!--            iLO 2 - None.                                        -->
+<!--     <HOLD_PWR_BTN/>                                             -->
+<!--     If server power is on, server power will be turned off.     -->
+<!--     If server power is off, server power will remain off.       -->
+
+
+<!--        Firmware support information for next tag:                -->
+<!--            iLO 4 - All versions.                                -->
+<!--            iLO 3 - None.                                        -->
+<!--            iLO 2 - All versions.                                -->
+<!--     <HOLD_PWR_BTN TOGGLE = "Yes" />                             -->
+<!--     If server power is on, server power will be turned off.     -->
+<!--     If server power is off and TOGGLE is "Yes", server power    -->
+<!--        will be turned on.                                       -->
+<!--     If server power is off and TOGGLE is not "Yes", server power-->
+<!--        will remain off.                                         -->
+
+
+<!--        Firmware support information for next tag:                -->
+<!--            iLO 4 - None.                                        -->
+<!--            iLO 3 - All versions.                                -->
+<!--            iLO 2 - None.                                        -->
+<!--     <HOLD_PWR_BTN TOGGLE = "Yes" />                             -->
+<!--     If server power is on, server power will be turned off.     -->
+<!--     If server power is off, server power will remain off        -->
+<!--        regardless of the value of TOGGLE.                       -->
+
+      </SERVER_INFO>
+   </LOGIN>
+</RIBCL>

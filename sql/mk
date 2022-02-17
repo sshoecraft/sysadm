@@ -1,0 +1,25 @@
+#
+#PASS=
+#
+#mysqladmin --user=root --password=$PASS --force drop esxadmin;
+#mysqladmin --user=root --password=$PASS create esxadmin
+#mysql --user=root --password=$PASS < cmds
+db=`cat ~/.my.cnf | grep ^database= | awk -F= '{ print $2 }'`
+user=`cat ~/.my.cnf | grep ^user= | awk -F= '{ print $2 }'`
+pass=`cat ~/.my.cnf | grep ^password= | awk -F= '{ print $2 }'`
+DBCRED="--database=$db --user=$user --password=$pass"
+test "$1" = "yes" || exit 0
+ls -r *.sql | while read f
+do
+	n=`echo $f | awk '{ print substr($0,3); }' | sed "s:\.sql$::"`
+	if test `echo $f | grep -c _vw` -gt 0; then
+		mysql $DBCRED -e "DROP VIEW IF EXISTS $n"
+	else
+		mysql $DBCRED -e "DROP TABLE IF EXISTS $n"
+	fi
+done
+ls *.sql | while read f
+do
+	echo $f
+	mysql $DBCRED < $f
+done

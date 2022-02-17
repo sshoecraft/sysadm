@@ -1,0 +1,16 @@
+<RIBCL VERSION="2.0">
+  <LOGIN USER_LOGIN="adminname" PASSWORD="password">
+   <SERVER_INFO MODE="write">
+     <SET_PERSISTENT_BOOT>
+<DEVICE value="Boot0009" />
+<DEVICE value="Boot000F" />
+<DEVICE value="Boot000A" />
+<DEVICE value="Boot000E" />
+<DEVICE value="Boot0008" />
+<DEVICE value="Boot000C" />
+<DEVICE value="Boot000B" />
+<DEVICE value="Boot000D" />
+     </SET_PERSISTENT_BOOT>
+   </SERVER_INFO>
+  </LOGIN>
+</RIBCL>

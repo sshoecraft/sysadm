@@ -1,0 +1,22 @@
+#!/bin/bash
+
+. /usr/local/etc/.oacreds
+tools=/usr/local/lib/tools
+tmp=/tmp/resetblade.$$
+encinfo=/usr/local/etc/encinfo.dat
+
+if test -z "$1"; then
+	echo "usage: resetblade <hostname>"
+	exit 1
+fi
+arg=`echo $1 | tr "[:upper:]" "[:lower:]"`
+info=`cat $encinfo | grep $1`
+if test -z "$info"; then
+	echo "error: unable to find $1"
+	exit 1
+fi
+#echo info: $info
+oa=`echo $info | awk -F, '{ print $1 }'`
+bay=`echo $info | awk -F, '{ print $3 }'`
+#echo "oa: $oa, bay: $bay"
+$tools/oareset.exp $oa $OAUSER $OAPASS $bay

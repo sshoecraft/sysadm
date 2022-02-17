@@ -1,0 +1,12 @@
+Summary: system builder
+Name: builder
+Version: 1
+Release: 0
+License: MSH
+Group: Applications/System
+BuildArch: noarch
+
+%description
+A utility to build systems
+
+%files

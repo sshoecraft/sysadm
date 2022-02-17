@@ -1,0 +1,211 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use XML::Simple qw(:strict);
+use Data::Dumper;
+use File::Temp;
+use Time::ParseDate;
+use DateTime;
+use BerkeleyDB;
+use sigtrap qw/handler signal_handler normal-signals/;
+
+use lib qw (/usr/local/lib/perl);
+use utils;
+
+$debug = 9;
+
+my $ilo_user = "ilouser";
+my $ilo_pass = "aWxvdXMxbjIK";
+my $home = $ENV{ HOME };
+my $libdir = "$home/etc/hpmon";
+my $tools = "/usr/local/lib/tools";
+my $timeout = 30;
+
+$SIG{INT}  = \&cleanup;
+$SIG{TERM} = \&cleanup;
+$SIG{ABRT} = \&cleanup;
+
+my ($db,$cmdfile,$logfile,$outfile);
+$cmdfile = $logfile = $outfile = "";
+sub END {
+	dprintf(1,"cleaning up...\n");
+#	unlink($cmdfile) if (length($cmdfile) > 0);
+#	unlink($logfile) if (length($logfile) > 0);
+#	unlink($outfile) if (length($outfile) > 0);
+	$db->db_close() if (defined($db));
+}
+
+my $ilo = $ARGV[0];
+#$ilo = "10.184.240.27";
+exit 0 unless($ilo);
+dprintf(1,"ilo: %s\n", $ilo);
+
+# First, get our last check time
+
+system("mkdir -p $libdir");
+my $dbfile = $libdir . "/lastchk.db";
+my $env = new BerkeleyDB::Env( -Home => $libdir, -Flags => DB_INIT_CDB|DB_INIT_MPOOL|DB_CREATE );
+$db = new BerkeleyDB::Hash( -Filename => $dbfile, -Flags  => DB_CREATE, -Env => $env) or die;
+my $last_check;
+$db->db_get( $ilo, $last_check );
+#print Dumper($last_check);
+
+# Dont go back more than a year ago
+$last_check = parsedate("2 year ago") unless($last_check);
+dprintf(1,"last_check: %s\n", $last_check);
+dprintf(1,"curr time:  %s\n", time());
+
+$cmdfile = mktemp("/tmp/hpm2XXXXXX");
+my $fh = new IO::File;
+$fh->open($cmdfile,"w");
+print $fh <<EOF;
+<RIBCL version="2.21">
+   <LOGIN USER_LOGIN="adminname" PASSWORD="password">
+      <SERVER_INFO MODE="READ" >
+         <GET_EVENT_LOG />
+      </SERVER_INFO>
+   </LOGIN>
+</RIBCL>
+EOF
+close($fh);
+
+$logfile = mktemp("/tmp/hpm3XXXXXX");
+dprintf(1,"logfile: %s\n", $logfile);
+my $cmd = "/usr/local/bin/timeout $timeout $tools/locfg.pl -s $ilo -u $ilo_user -p \$(echo $ilo_pass | base64 -d) -f $cmdfile > $logfile 2>/dev/null";
+dprintf(3,"cmd: %s\n", $cmd);
+my $status = system($cmd);
+dprintf(1,"status(1): %d\n", $status);
+$status = 0 if ($status == 255);
+dprintf(1,"status(2): %d\n", $status);
+$status >>= 8 if ($status > 255);
+dprintf(1,"status(3): %d\n", $status);
+exit(1) if ($status != 0);
+
+$outfile = mktemp("/tmp/hpm2XXXXXX");
+dprintf(1,"outfile: %s\n", $outfile);
+open(my $in,"<",$logfile);
+open(my $out,">",$outfile);
+my $start = 0;
+while(<$in>) {
+	chomp($_);
+	if ($start == 0) {
+		if ($_ =~ m/^<EVENT_LOG/) {
+			printf($out "%s\n", $_);
+			$start = 1;
+		}
+	} else {
+		printf($out "%s\n", $_);
+		last if ($_ =~ m|^</EVENT_LOG|);
+	}
+}
+close($in);
+close($out);
+
+my $outsize = -s $outfile;
+dprintf(1,"outsize: %d\n", $outsize);
+exit(0) if ($outsize < 5);
+
+my $events;
+eval {
+	$events = XMLin($outfile, KeyAttr => [ ], forcearray => [ 'vswitch','portgroup','interface','option' ]);
+};
+exit 1 unless($events);
+
+#	$VAR1 = {
+#          'SEVERITY' => 'Caution',
+#          'CLASS' => 'POST Message',
+#          'INITIAL_UPDATE' => '02/01/2018 15:22',
+#          'LAST_UPDATE' => '02/01/2018 15:22',
+#          'DESCRIPTION' => 'POST Error: 1720-S.M.A.R.T. Hard Drive Detects Imminent Failure',
+#          'COUNT' => '1'
+
+my %reported;
+sub report($) {
+	my ($event) = @_;
+
+#	printf("reporting:\n");
+#	print Dumper($event);
+#	$reported{$event->{DESCRIPTION}} = $event unless($reported{$event->{DESCRIPTION}});
+	# XXX overwrite to get latest date
+	$reported{$event->{DESCRIPTION}} = $event;
+#	printf("[%s] %s: %s\n", $event->{LAST_UPDATE}, $event->{SEVERITY}, $event->{DESCRIPTION});
+#	printf("%s: %s\n", $event->{LAST_UPDATE}, $event->{SEVERITY}, $event->{DESCRIPTION});
+}
+
+$events->{EVENT} = () unless($events->{EVENT});
+my @events = @{$events->{EVENT}};
+foreach my $event (@events) {
+#	print Dumper($event);
+	dprintf(2,"date: %s\n", $event->{LAST_UPDATE});
+	my $val = parsedate($event->{LAST_UPDATE}, GMT => 1);
+	$val = 0 unless($val);
+	dprintf(2,"val: %s, last_check: %s, time: %s\n", $val, $last_check, time());
+	next if ($val <= $last_check);
+#	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = gmtime($val);
+#	my $imp_end = sprintf("%04d-%02d-%02d %02d:%02d:00", $year+1900,$mon+1,$mday,$hour,$min);
+#	dprintf(1,"==> date: %s\n", $imp_end);
+#	next;
+		report($event);
+	next;
+	if ($event->{SEVERITY} eq 'Repaired') {
+		report($event);
+	} elsif ($event->{SEVERITY} eq 'Warning') {
+		report($event);
+	} elsif ($event->{SEVERITY} eq 'Critical') {
+		report($event);
+	} elsif ($event->{SEVERITY} eq 'Caution' && $event->{DESCRIPTION} =~ m/Failure/i) {
+		report($event);
+	}
+}
+
+# if nothing in reported, exit
+exit 0 if (scalar(keys(%reported)) < 1);
+
+# Reported has unique list of descriptions
+my %report;
+foreach my $key (keys(%reported)) {
+	my $event = $reported{$key};
+	my $val = parsedate($event->{LAST_UPDATE}, GMT => 1);
+	$val = 0 unless($val);
+	$report{$val} = $event;
+}
+
+if (0 == 1) {
+my $name = "";
+$fh->open($cmdfile,"w");
+print $fh <<EOF;
+<RIBCL VERSION="2.0">
+   <LOGIN USER_LOGIN="adminname" PASSWORD="password">
+      <SERVER_INFO MODE="read">
+         <GET_SERVER_NAME/>
+      </SERVER_INFO>
+   </LOGIN>
+</RIBCL>
+EOF
+close($fh);
+$cmd = "/usr/local/bin/timeout $timeout $tools/locfg.pl -s $ilo -u $ilo_user -p \$(echo $ilo_pass | base64 -d) -f $cmdfile > $logfile 2>/dev/null";
+dprintf(3,"cmd: %s\n", $cmd);
+$status = system($cmd);
+dprintf(1,"status(1): %d\n", $status);
+$status = 0 if ($status == 255);
+dprintf(1,"status(2): %d\n", $status);
+$status >>= 8 if ($status > 255);
+dprintf(1,"status(3): %d\n", $status);
+if ($status == 0) {
+	$name = `cat $logfile | grep '^<SERVER_NAME' | awk -F= '{ print \$2 }' | awk '{ print \$1 }' | sed 's:\"::g'`;
+	chomp($name);
+}
+$name = $ilo if (length($name) == 0);
+
+# Sort by date
+printf("%s\n", $name);
+}
+foreach my $key (sort keys(%report)) {
+	my $event = $report{$key};
+	printf("[%s] %s: %s\n", $event->{LAST_UPDATE}, $event->{SEVERITY}, $event->{DESCRIPTION});
+}
+#printf("\n");
+
+# Update the last check time
+$db->db_put($ilo, time());
+exit(0);

@@ -1,0 +1,3 @@
+#!/bin/bash
+cat test | md5sum
+cat test | ./encfile try - - | ./decfile try - - | md5sum

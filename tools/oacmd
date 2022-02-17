@@ -1,0 +1,11 @@
+#!/bin/bash
+. /usr/local/etc/.oacreds
+exp=/usr/local/lib/tools/oacmd.exp
+if test -z "$1"; then
+	echo "usage: $0 <ci>"
+	exit 1
+fi
+server="$1"
+shift
+$exp $server $OAUSER $OAPASS "$*"
+exit 0

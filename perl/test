@@ -1,0 +1,12 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+use utils;
+
+$debug = 1;
+
+#my $f = utils::getfqdn("dev-vgs01x");
+#printf("f: %s\n", $f);
+
+dprintf(1,"OK\n");

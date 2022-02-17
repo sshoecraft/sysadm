@@ -1,0 +1,27 @@
+#!/bin/bash
+
+ROOT=$HOME/rpmbuild/BUILDROOT/$NAME-1-0.x86_64
+
+mkroot() {
+#rm -rf buildroot; mkdir -p buildroot
+make install BUILDROOT=$ROOT
+}
+mkspec() {
+cp $NAME.spec.pre $NAME.spec
+CWD=`pwd`
+(cd $ROOT || exit 1; find . | sed "s:^\.::" > $CWD/$NAME.spec.files)
+while read n
+do
+	test -z "$n" && continue
+	test -f "$n" || continue
+	stat --format="%%attr(%a,%U,%G) %n" "$n" >> $NAME.spec
+done < $NAME.spec.files
+rm -f $NAME.spec.files
+}
+mkroot
+mkspec
+exit 1
+rpmbuild -bb $NAME.spec || exit 1
+rm -f $NAME.spec
+scp /home/sysadm/rpmbuild/RPMS/noarch/$NAME-1-0.noarch.rpm ddc-coe:/tmp
+ssh -t ddc-coe "sudo bash -c \"mv /tmp/$NAME-1-0.noarch.rpm /coe/misc; /usr/local/bin/sync_coe\""

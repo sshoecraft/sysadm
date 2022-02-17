@@ -1,0 +1,27 @@
+#!/bin/bash
+USER=sysadm
+#-o ProxyCommand="ssh -q -W %h:%p usow-coe"
+#let c=$#-1
+#ARGS=""
+#while test $c -gt 0
+#do
+#        ARGS="$ARGS$1 "
+#        shift
+#        let c=$c-1
+#done
+HOST=$1
+shift
+tmp=/dev/shm/admssh.$$
+trap '{ rm -f $tmp; }' EXIT
+OPTS="-t -t -F /dev/null -o ConnectTimeout=5 -o PreferredAuthentications=publickey -o StrictHostKeyChecking=no"
+test -n "$1" && IN="-n -q"
+#echo "IN: $IN"
+if test -f /usr/local/lib/tools/key.gz; then
+	cat /usr/local/lib/tools/key.gz | gzip -d > $tmp
+	chmod 600 $tmp
+	IDENT="-i $tmp"
+fi
+ssh $IDENT $IN $OPTS $ARGS $USER@$HOST $*
+status=$?
+rm -f $tmp
+exit $status

@@ -1,0 +1,28 @@
+
+static void sql_error() { 
+	EXEC SQL WHENEVER SQLERROR CONTINUE; 
+	strcpy(sql_error_text,sqlca.sqlerrm.sqlerrmc);
+	sql_return_code = sqlca.sqlcode;
+	switch(sqlca.sqlcode) {
+		case -1:
+			switch(sqlca.sqlerrm.sqlerrml) {
+				case 65:
+					sql_return_code = -1001;
+					break;
+			}
+			break;
+		case -1405:
+			sql_return_code = 0;
+			sql_error_text[0] = 0;
+			break;
+		case -3144:
+			connected = 0;
+			break;
+	}
+	return;
+}
+
+static void sql_not_found(void) {
+	sql_return_code = 100;
+	return;
+}

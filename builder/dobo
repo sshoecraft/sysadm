@@ -1,0 +1,45 @@
+ilo=10.5.221.240
+#ilo=10.123.128.198
+/usr/local/lib/tools/locfg.pl -s $ilo -u ilouser -p "ByeKurt!" -f Get_Persistent_Boot_Order.xml > x
+dos2unix x
+#exit 0
+let start=0
+rm -f yes no; touch yes no
+while read line
+do
+	if test $start -eq 0; then
+		if test "$line" = "<PERSISTENT_BOOT>"; then
+			let start=1
+		fi
+	else
+		test "$line" = "</PERSISTENT_BOOT>" && break
+		value=`echo "$line" | awk -F= '{ print $2 }' | awk '{ print $1 }'`
+#		echo "value: $value"
+		desc=`echo "$line" | awk -F= '{ print $3 }'`
+		if test `echo "$value" | grep -c "HDD"` -gt 0; then
+			echo "$line" >> yes
+		elif test `echo "$value" | grep -c "Unknown"` -gt 0; then
+			continue
+		elif test `echo "$desc" | grep -c "Smart Array"` -gt 0; then
+			echo "<DEVICE value=$value />" >> yes
+		elif test `echo "$line" | grep -c "DESCRIPTION="` -gt 0; then
+			echo "<DEVICE value=$value />" >> no
+		else
+			echo "$line" >> no
+		fi
+	fi
+done < x
+cat > try.xml << EOF
+<RIBCL VERSION="2.0">
+  <LOGIN USER_LOGIN="adminname" PASSWORD="password">
+   <SERVER_INFO MODE="write">
+     <SET_PERSISTENT_BOOT>
+EOF
+cat yes >> try.xml
+cat no >> try.xml
+cat >> try.xml << EOF
+     </SET_PERSISTENT_BOOT>
+   </SERVER_INFO>
+  </LOGIN>
+</RIBCL>
+EOF

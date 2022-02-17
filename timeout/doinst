@@ -1,0 +1,9 @@
+#!/bin/bash
+prog=timeout
+scp -B -o ConnectTimeout=5 $prog $1:/tmp > /dev/null
+if [ $? -ne 0 ]; then
+	exit 1
+fi
+sudo="/usr/bin/sudo"
+#sudo="/opt/pb/bin/pbrun"
+ssh -n -q -o BatchMode=yes -o ConnectTimeout=5 $1 "$sudo /bin/bash -c \"mkdir -p /usr/local/bin; mv /tmp/$prog /usr/local/bin; chown root:root /usr/local/bin/$prog; chmod 755 /usr/local/bin/$prog\""

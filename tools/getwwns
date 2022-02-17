@@ -1,0 +1,31 @@
+#!/bin/bash
+test -z "$1" && exit 1
+
+OPTS=""
+while test $# -gt 1
+do
+	OPTS="$OPTS $1"
+	shift
+done
+
+SRC=/usr/local/lib/tools/wwninfo
+tmp=/tmp/getwwns.$$
+/usr/local/bin/timeout 2 /usr/local/bin/esxconf -a -s "$1" > /dev/null 2>&1
+if test $? -eq 0; then
+fromhost() {
+	/usr/local/bin/esxconf -s $1 config.storageDevice.hostBusAdapter | grep portWorldWideName | awk '{ print $2 }' > $tmp
+	while read num
+	do
+		printf " %llx" $num
+	done < $tmp
+}
+	wwn=$(/usr/local/bin/pulldb --wwn ^$1 | sed "s+:++g" | awk '{ print $2" "$3 }')
+	test "$wwn" = " " && wwn=$(fromhost $1)
+	echo $1 $wwn
+else
+	/usr/local/bin/timeout 30 /usr/local/lib/tools/admssh $1 "sudo bash -c \"rm -f /tmp/wwninfo\"" > $tmp
+	/usr/local/lib/tools/admscp $SRC $1:/tmp/wwninfo > /dev/null 2>&1
+	test $? -ne 0 && exit 1
+	/usr/local/lib/tools/admssh $1 "sudo bash -c \"chmod 755 /tmp/wwninfo; /tmp/wwninfo $OPTS\""
+fi
+rm -f $tmp

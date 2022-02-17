@@ -1,0 +1,9 @@
+<RIBCL VERSION="2.0">
+  <LOGIN USER_LOGIN="adminname" PASSWORD="password">
+    <RIB_INFO MODE="write">
+      <LICENSE>
+        <ACTIVATE KEY="+++KEY+++"/>
+      </LICENSE>
+    </RIB_INFO>
+  </LOGIN>
+</RIBCL>

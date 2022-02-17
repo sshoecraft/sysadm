@@ -1,0 +1,5 @@
+while read n
+do
+	echo $n
+	./hpmon $n
+done < hpsim1

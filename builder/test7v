@@ -1,0 +1,4 @@
+#!/bin/bash
+./destroy_vm test17
+sleep 5
+./builder test17 DDC+DDC-UAT ol7_test 127

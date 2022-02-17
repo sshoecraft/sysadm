@@ -1,0 +1,37 @@
+#!/bin/bash
+
+usage() {
+	echo "usage: idrac: <ip> <coe server> <coe image name>"
+	exit 1
+}
+test -z "$3" && usage
+
+dracip=$1
+dracuser=root
+dracpass=calvin
+coe_server=$2
+coe_image=$3
+
+RAC=/opt/dell/srvadmin/bin/idracadm7
+DORAC="$RAC -r $dracip -u $dracuser -p $dracpass"
+
+$DORAC get idrac.info > /dev/null 2>&1
+status=$?
+#echo "status: $status"
+test $status -ne 0 && exit 1
+exit 0
+
+#$DORAC jobqueue delete -i JID_CLEARALL_FORCE
+#$DORAC serveraction powerdown -f
+$DORAC set idrac.serverboot.BootOnce 1
+$DORAC set idrac.serverboot.FirstBootDevice VCD-DVD
+#$DORAC set BIOS.OneTimeBoot.OneTimeBootMode OneTimeBootSeq
+#$DORAC set BIOS.OneTimeBoot.OneTimeBootSeqDev Optical.iDRACVirtual.1-1
+$DORAC remoteimage -d
+sleep 3
+$DORAC remoteimage -c -u none -p none -l "//$coe_server/coe_install/$coe_image"
+#$DORAC jobqueue create BIOS.Setup.1-1 -r pwrcycle -s TIME_NOW -e TIME_NA
+#$DORAC serveraction powerup
+$DORAC serveraction hardreset -f
+
+exit 0

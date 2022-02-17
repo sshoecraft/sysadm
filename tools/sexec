@@ -1,0 +1,46 @@
+#!/bin/sh
+tmp=/tmp/sexec.$$
+usage() {
+	echo "usage: sexec -ct <copy timeout> -et <exec timeout> <script> <system>"
+	exit 1
+}
+SCP_TIMEOUT=120
+if test "$1" = "-ct"; then
+	shift
+	test -z "$1" && usage
+	SCP_TIMEOUT="$1"
+	shift
+fi
+SSH_TIMEOUT=600
+if test "$1" = "-et"; then
+	shift
+	test -z "$1" && usage
+	SSH_TIMEOUT="$1"
+	shift
+fi
+test -z "$1" && usage
+SCRIPT_PATH="$1"
+if test ! -f "$SCRIPT_PATH"; then
+	echo "script not found: $SCRIPT_PATH"
+	usage
+fi
+SCRIPT_NAME=`basename $SCRIPT_PATH`
+shift
+test -z "$1" && usage
+SYSTEM="$1"
+h=`host $SYSTEM 2>&1`
+if test `echo $h | grep -c "not found"` -gt 0; then
+	echo $h
+	usage
+fi
+echo "SCP_TIMEOUT: $SCP_TIMEOUT, SSH_TIMEOUT: $SSH_TIMEOUT, SCRIPT_PATH: $SCRIPT_PATH, SCRIPT_NAME: $SCRIPT_NAME, SYSTEM: $SYSTEM"
+TOOLS=/usr/local/lib/tools
+trap '{ echo "Aborting." ; rm -f $tmp; exit 1; }' INT TERM ABRT
+/usr/local/bin/timeout $SCP_TIMEOUT $TOOLS/admscp $SCRIPT_PATH $SYSTEM:/tmp/$SCRIPT_NAME > $tmp 2>&1
+if test $? -ne 0; then
+	cat $tmp
+	rm -f $tmp
+	exit 1
+fi
+/usr/local/bin/timeout $SSH_TIMEOUT $TOOLS/admssh $SYSTEM "sudo su - root -c \"chmod +x /tmp/$SCRIPT_NAME; sh /tmp/$SCRIPT_NAME; rm -f /tmp/$SCRIPT_NAME\""
+

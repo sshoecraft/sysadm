@@ -1,0 +1,28 @@
+#!/bin/bash
+
+test -z "$1" && exit 1
+#test `echo $1 | grep -c -e '10\.[0-9]' -e '192\.168'` -eq 0 && exit 0
+oaip=$1
+
+tools=/usr/local/lib/tools
+
+. /usr/local/etc/.oacreds
+cmds=/tmp/encip_$$.cmd
+tmp1=/tmp/encip1_$$.tmp
+tmp2=/tmp/encip2_$$.tmp
+tmp3=/tmp/encip3_$$.tmp
+trap '{ rm -f $cmds $tmp1 $tmp2 $tmp3; }' INT TERM ABRT EXIT
+rm -f $cmds
+#echo "SHOW ENC INFO" >> $cmds
+echo "SHOW VCMODE" >> $cmds
+$tools/oacmd.exp $oaip $OAUSER $(echo $OAPASS | base64 -d) $cmds > $tmp1
+dos2unix $tmp1 > /dev/null 2>&1
+name=`cat $tmp1 | grep 'Enclosure Name:' | awk '{ print $NF }'`
+vcip=`cat $tmp1 | grep http | awk -F// '{ print $2 }' | awk -F/ '{ print $1 }' | head -1`
+if test -z "$vcip"; then
+	echo "ERROR: unable to get vcip from $name($oaip)!"
+#	continue
+	exit 1
+fi
+echo $vcip
+exit 0

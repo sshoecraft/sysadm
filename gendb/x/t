@@ -1,0 +1,13 @@
+while read n
+do
+	test `cat skip | grep -c "$n"` -gt 0 && continue
+	test `cat done | grep -c "$n"` -gt 0 && continue
+	echo "$n"
+	echo "select * from '$n'" > q
+	isql mbs mbs_ro "mbs2011readonly**" < q > y 2>&1
+	if test `cat y | grep -c -i d9tdev-iba-lb10` -gt 0; then
+		echo "FOUND IT!!!!! => $n"
+		exit 1
+	fi
+	echo $n >> done
+done < l

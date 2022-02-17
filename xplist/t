@@ -1,0 +1,4 @@
+#!/bin/sh
+echo ""
+echo "***** $1 *****"
+ssh -n -q -o BatchMode=yes $1 "sudo /usr/local/bin/xplist -aV | grep HSV" 

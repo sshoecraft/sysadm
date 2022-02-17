@@ -1,0 +1,52 @@
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+connect: Connection refused at /usr/local/lib/tools/locfg.pl line 273.
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+Error: Failed to establish SSL connection with 10.138.26.32 .
+
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+[03/28/2017 17:54] Caution: Internal Storage Enclosure Device Failure (Bay 4, Box 1, Port 1I, Slot 0)
+[10/01/2017 00:05] Caution: POST Error: 1784-Slot X Drive Array - Logical Drive Failure
+[02/18/2018 22:50] Caution: Internal Storage Enclosure Device Failure (Bay 10, Box 1, Port 5I, Slot 3)
+[03/02/2018 03:22] Caution: Internal Storage[08/27/2017 01:07] Caution: POST Error: 1720-S.M.A.R.T. Har[10/24/2017 11:07] Caution: System Power Supply: General Failure (Power Supply 1)
+[10/24/2017 11:08] Caution: POST Error: 1615-Power Supply Failure or Power Supply Unplugged in Bay 1
+[08/29/2017 15:01] Caution: System Power Supply: General Failure (Power Supply 2)
+[08/30/2017 09:02] Caution: System Power Supply: General Failure (Power Supply 1)
+[05/04/2017 13:17] Caution: POST Error: 1784-Drive Array Drive Failure
+[03/06/2018 01:03] Caution: Internal Storage Enclosure Device Failure (Bay 2, Box 2, Port 1I, Slot 0)
+[08/27/2017 01:07] Caution: POST Error: 1720-S.M.A.R.T. Hard Drive Detects Imminent Failure
+[04/12/2017 14:13] Caution: POST Error: 1783-Slot X Drive Array Controller Failure
+[01/07/2018 00:09] Caution: POST Error: 1720-S.M.A.R.T. Hard Drive Detects Imminent Failure
+[11/08/2017 11:28] Caution: POST Error: 1720-S.M.A.R.T. Hard Drive Detects Imminent Failure
+[08/30/2017 10:55] Caution: Internal Storage Enclosure Device Failure (Bay 3, Box 1, Port 1I, Slot 0)
+[01/14/2018 19:56] Caution: Fan Failure (Fan 7, Location System)
+[07/17/2017 17:18] Caution: Fan Failure (Fan 3, Location System)
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+[05/22/2017 22:02] Caution: Internal Storage Enclosure Device Failure (Bay 2, Box 1, Port 1I, Slot 2)
+connect: No route to host at /usr/local/lib/tools/locfg.pl line 273.
+[11/02/2017 11:48] Caution: Internal Storage Enclosure Device Failure (Bay 3, Box 2, Port 1I, Slot 0)
+[08/27/2017 04:02] Caution: POST Error: 1784-Drive Array Drive Failure
+[05/14/2017 07:46] Caution: POST Error: 1720-S.M.A.R.T. Hard Drive Detects Imminent Failure
+connect: Connection refused at /usr/local/lib/tools/locfg.pl line 273.
+[05/13/2017 20:11] Caution: Internal Storage Enclosure Device Failure (Bay 8, Box 1, Port 1I, Slot 0)
+[05/13/2017 20:08] Caution: POST Error: 1615-Power Supply Input Failure in Bay 2
+[01/13/2018 02:32] Caution: POST Error: 1615-Power Supply Input Failure in Bay 2
+[26/26/2026 26:26] Caution: POST Error: 1720-S.M.A.R.T. Hard Drive Detects Imminent Failure
+Error: Failed to establish SSL connection with 10.92.60.100 .
+
+[12/17/2017 00:35] Caution: POST Error: 1784-Drive Array Drive Failure
+[02/24/2018 01:08] Caution: System Power Supply: General Failure (Power Supply 2)
+[09/17/2017 00:18] Caution: POST Error: 1720-S.M.A.R.T. Hard Drive Detects Imminent Failure

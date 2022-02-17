@@ -1,0 +1,17 @@
+cd /vmfs/volumes
+rm -f /tmp/t; touch /tmp/t
+for d in *
+do
+        test ! -h $d && continue
+        l=`readlink $d`
+        echo $d $l >> /tmp/t
+done
+rm -f /tmp/t2
+esxcfg-vmhbadevs -m | while read hba dev uid
+do
+        v=`cat /tmp/t | grep $uid | awk '{ print $1 }'`
+        echo $dev $v >> /tmp/t2
+done
+rm -f /tmp/t
+sort -k 2 /tmp/t2
+rm -f /tmp/t2

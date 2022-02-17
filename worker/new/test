@@ -1,0 +1,53 @@
+#!/bin/bash
+
+input_file=$1
+
+if=tmpin
+of=output
+rm -f $if
+while read line
+do
+        echo $line >> $if
+done < $input_file
+do_test() {
+	rm -f $of
+	./worker $if 64 ./t > /dev/null 2>&1
+	ic=`wc -l $if | awk '{ print $1 }'`
+	oc=`wc -l $of | awk '{ print $1 }'`
+	echo "ic: $ic, oc: $oc"
+	test $ic -ne $oc && return 1
+	sort -u $if > in
+	sort -u $of > out
+	diff -w in out
+	test $? -ne 0 && return 1
+	return 0
+}
+if test 0 -eq 1; then
+count=`wc -l $if | awk '{ print $1 }'`
+let t=1
+while test $t -le $count
+do
+	do_test $t
+	status=$?
+	if test $status -eq 0; then
+		msg="ok"
+	else
+		msg="fail"
+	fi
+	echo "$t: $msg"
+	test $status -ne 0 && exit 1
+	let t=$t*2
+done
+fi
+for t in 1 2 4 8 16 32 64 128 256 512 1024
+do
+	do_test $t
+	status=$?
+	if test $status -eq 0; then
+		msg="ok"
+	else
+		msg="fail"
+	fi
+	echo "$t: $msg"
+	test $status -ne 0 && exit 1
+done

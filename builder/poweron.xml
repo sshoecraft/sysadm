@@ -1,0 +1,7 @@
+<RIBCL VERSION="2.0">
+	<LOGIN USER_LOGIN="adminname" PASSWORD="password">
+		<SERVER_INFO MODE="write">
+			<SET_HOST_POWER HOST_POWER="YES"/>
+		</SERVER_INFO>
+	</LOGIN>
+</RIBCL>

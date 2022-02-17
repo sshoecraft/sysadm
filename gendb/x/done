@@ -1,0 +1,134 @@
+dbo.ACCommandPermissions
+dbo.ACFieldPermissions
+dbo.ACUserGroups
+dbo.AdminChangeLog
+dbo.AdminScreens
+dbo.AdminSecurity
+dbo.AdminUsers
+dbo.AdminUsersSecurity
+dbo.ais_status
+dbo.ApertureServerModel
+dbo.AutomationToolStatus
+dbo.BackPlane
+dbo.BackplaneClusterType
+dbo.BackplaneServerModel
+dbo.BladeData
+dbo.BTIL
+dbo.BTILChangeLog
+dbo.Build_Issues
+dbo.BuildTeamIssues
+dbo.BUMapping
+dbo.ChangeCI
+dbo.ClusterException
+dbo.ClusterType
+dbo.ComputeSpace
+dbo.dcc_server_util
+dbo.DCCPPriorities
+dbo.DCCPServerModels
+dbo.DemandEnable
+dbo.DeployTeamStatusDays
+dbo.dtproperties
+dbo.ErrorHandler
+dbo.event
+dbo.FarmPool
+dbo.FileLocation
+dbo.HandoffLetterBodyParts
+dbo.HandoffLetterDLs
+dbo.HHOPods
+dbo.InfraServices
+dbo.Instance
+dbo.IPAddressPool
+dbo.Job
+dbo.JobUser
+dbo.LANConfig
+dbo.LastUsedHostnames
+dbo.LastUsedLookUp
+dbo.LocationType
+dbo.Lockdown
+dbo.LockViolationsLog
+dbo.MBSFieldDefinitions
+dbo.MovePackageCategory
+dbo.NetworkCheatSheet
+dbo.NetworkCheatSheetNetworkSegment
+dbo.NetworkSegment
+dbo.PickLists
+dbo.ServerModelChart
+dbo.ServerModelLANMap
+dbo.SIMLastHostname
+dbo.SimSite
+dbo.SimSubNet
+dbo.StaticVsDHCP
+dbo.tblBuildFlow
+dbo.tblDeployTeamStatus
+dbo.TowerDescription
+dbo.UserList
+dbo.WinXMLServerModel
+dbo.WorkFlow
+dbo.WorkFlowCriteria
+dbo.WorkFlowDeployTeamStatus
+dbo.CatMBSqty
+dbo.mbs_built_servers
+dbo.MBSDtsAgingMaxBuild
+dbo.MBSDtsAgingMinBuild
+dbo.MBSExtract
+dbo.MissingOVSDID
+dbo.View Aging Lockdown
+dbo.View BCS Total
+dbo.View BU Allocation
+dbo.View Build Report Count
+dbo.View Distinct MovePkg
+dbo.View Location Added
+dbo.View Location Daily
+dbo.View Location Pending Details
+dbo.View Location Queue
+dbo.View MBS App Data Backup
+dbo.View MBS Application Status
+dbo.View MBS Config Mangement
+dbo.View MBS Database
+dbo.View MBS Deleted Records
+dbo.View MBS Demand_Extract_ALL
+dbo.View MBS Handoff
+dbo.View MBS IP Assignment
+dbo.View MBS Linux Build
+dbo.View MBS Lockdown
+dbo.View MBS Monitoring
+dbo.View MBS Networking
+dbo.View MBS Oracle 112
+dbo.View MBS Pending Aall
+dbo.View MBS Pending All
+dbo.View MBS PreCIValidation
+dbo.View MBS PreCIValidationSummary
+dbo.View MBS QuickStatus
+dbo.View MBS Racking
+dbo.View MBS Storage
+dbo.View MBS UNIX Build
+dbo.View MBS Web Hosting
+dbo.View MBS Windows Build
+dbo.View MBS with SAN Totals
+dbo.View MBS with SAN Totals ALL
+dbo.View MBS with SAN Totals ALL Archieve
+dbo.View Time1New2Racking
+dbo.View Time2Racking2Cable
+dbo.View Time3Cable2IgniteUnix
+dbo.View Time3Cable2LinuxIgnite
+dbo.View Time3Cable2SAN
+dbo.View Time3IgniteUnix2SAN
+dbo.View Time3LinuxIgnite2SAN
+dbo.View Time4SAN2LinuxBuild
+dbo.View Time4SAN2UnixBuild
+dbo.View Time4SAN2Win
+dbo.View Time5LinuxBuild2Monitor
+dbo.View Time5UnixBuild2Monitor
+dbo.View Time5Win2Monitor
+dbo.View Time6Monitor2Complete
+dbo.View Time7New2Complete
+dbo.view_dcc_cluster_master
+dbo.view_dcc_server_util
+dbo.view_mbs
+dbo.viewAdminSecurityUsers
+dbo.viewAvailableIPs
+dbo.viewDeployTeamStatusDays
+dbo.viewDTSAging
+dbo.viewFarmPools
+dbo.viewMBSConstraint
+dbo.viewSuggestedIP

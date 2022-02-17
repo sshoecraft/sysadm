@@ -1,0 +1,48 @@
+#OS Dist Ver  Arch  Profile  vm_id  nic  net
+esx5_vm VMWare ESXi-5.5.2 vm default vmkernel5Guest e1000 Trunked 2,8,8 vhv.enable=TRUE|scsi0:0.VirtualSSD=1
+esx5_usb VMWare ESXi-5.5.2 hp usb
+esx5_cciss VMWare ESXi-5.5.2 hp cciss
+esx5_disk VMWare ESXi-5.5.2 hp default
+esx55_vm VMWare ESXi-5.5.2 vm default vmkernel5Guest e1000 Trunked 2,8,8 vhv.enable=TRUE|scsi0:0.VirtualSSD=1
+esx55_usb VMWare ESXi-5.5.2 hp usb
+esx55_cciss VMWare ESXi-5.5.2 hp cciss
+esx55_disk VMWare ESXi-5.5.2 hp default
+esx6_vm VMWare ESXi-6.0.2 vm default vmkernel6Guest vmxnet3 Trunked 2,8,8 vhv.enable=TRUE|scsi0:0.VirtualSSD=1
+esx6_usb VMWare ESXi-6.0.2 hp usb
+esx6_disk VMWare ESXi-6.0.2 hp default
+dell_esx6_disk VMWare ESXi-6.0.2 dell default
+esx65_vm VMWare ESXi-6.5.1 vm default vmkernel6Guest vmxnet3 Trunked 2,8,8 vhv.enable=TRUE|scsi0:0.VirtualSSD=1
+esx65_usb VMWare ESXi-6.5.1 hp usb
+esx65_disk VMWare ESXi-6.5.1 hp default
+esx65 VMWare ESXi-6.5.1 hp default
+dell_esx65_disk VMWare ESXi-6.5.1 dell default
+esx_vm VMWare ESXi-6.7.0 vm default vmkernel6Guest vmxnet3 Trunked 2,8,8 vhv.enable=TRUE|scsi0:0.VirtualSSD=1
+esx_disk VMWare ESXi-6.7.0 hp default
+dell_esx_disk VMWare ESXi-6.7.0 dell default
+ol7_test Oracle 7 x86_64 default oracleLinux64Guest vmxnet3 Trunked
+rh4-32 RedHat 4 i386 default rhel4Guest e1000
+rh4-64 RedHat 4 x86_64 default rhel4_64Guest e1000
+rh5-32 RedHat 5 i386 default rhel5Guest e1000
+rh5-64 RedHat 5 x86_64 default rhel5_64Guest e1000
+rh6-32 RedHat 6 i386 default otherGuest vmxnet3
+rh6-64 RedHat 6 x86_64 default otherGuest64 vmxnet3
+rh7-64 RedHat 7 x86_64 default otherGuest64 vmxnet3
+rh7-flex RedHat 7 flex default otherGuest64 vmxnet3
+rh8-64 RedHat 8 x86_64 default otherGuest64 vmxnet3
+ol5-32 Oracle 5 i386 default oracleLinuxGuest e1000
+ol5-64 Oracle 5 x86_64 default oracleLinux64Guest e1000
+ol6-32 Oracle 6 i386 default oracleLinuxGuest vmxnet3
+ol6-64 Oracle 6 x86_64 default oracleLinux64Guest vmxnet3
+ol7-64 Oracle 7 x86_64 default oracleLinux64Guest vmxnet3
+c5-32 CentOS 5 i386 default centosGuest e1000
+c5-64 CentOS 5 x86_64 default centos64Guest e1000
+c6-32 CentOS 6 i386 default centosGuest vmxnet3
+c6-64 CentOS 6 x86_64 default centos64Guest vmxnet3
+c7-64 CentOS 7 x86_64 default centos64Guest vmxnet3
+c8-64 CentOS 8 x86_64 default centos64Guest vmxnet3
+win2012 Windows 2012 x64 default windows8Server64Guest vmxnet3
+hyp_vm Microsoft 2012r2 x64 vm default windowsHyperVGuest e1000e Trunked 2,8,8 vhv.enable=TRUE|hypervisor.cpuid.v0=FALSE
+spp none 0 none none
+sppg7 none 0 none none
+sppg8 none 0 none none
+rescue none 0 none none

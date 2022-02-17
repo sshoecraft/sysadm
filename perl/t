@@ -1,0 +1,16 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Data::Dumper;
+
+use lib qw (.  /usr/local/lib/perl);
+use utils;
+use worker;
+
+sub try {
+	print('args: ', join(' ', @_), "\n");
+}
+
+my $worker = worker->new(count => 16, func => \&try);
+
+worker->done;

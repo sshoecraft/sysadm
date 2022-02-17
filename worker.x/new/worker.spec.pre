@@ -1,0 +1,15 @@
+Summary: run a command in multiple threads
+Name: worker
+Version: <VERSION>
+Release: <RELEASE>
+License: Hewlett-Packard
+Group: Applications/System
+BuildArch: noarch
+
+%description
+A utility to run a command in multiple threads using an input file as an argument
+
+%files
+%attr(0755,root,root) /usr/local/bin/worker
+
+%changelog

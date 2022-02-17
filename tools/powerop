@@ -1,0 +1,93 @@
+#!/bin/bash
+
+. /usr/local/etc/.builder
+lib=/usr/local/lib/builder
+tools=/usr/local/lib/tools
+tmp=/tmp/powerop.tmp.$$
+tmplog=/tmp/powerop.log.$$
+
+usage() {
+	echo "$0: <on|off|cold|reset|status> <console>"
+	exit 1
+}
+
+test -z "$1" && usage
+test -z "$2" && usage
+cmd=$1
+ilo=$2
+
+ilocmd() {
+	$tools/locfg.pl -s $ilo -u $ilo_user -p $(echo $ilo_pass | base64 -d) -f $2 > $tmplog
+	if test `cat $tmplog | grep "MESSAGE=" | grep -c -v 'No error'` -gt 0; then
+		if test $1 -eq 1; then
+			echo "ERROR: message from ilo"
+			cat $tmplog
+			exit 1
+		fi
+	fi
+}
+
+getstat() {
+	$tools/locfg.pl -s $ilo -u $ilo_user -p $(echo $ilo_pass | base64 -d) -f $lib/powerstate.xml > $tmplog
+	eval state=$(cat $tmplog | grep HOST_POWER= | awk -F= '{ print $2 }')
+	echo $state
+	return 0
+}
+
+waitpower() {
+	$tools/locfg.pl -s $ilo -u $ilo_user -p $(echo $ilo_pass | base64 -d) -f $lib/powerstate.xml > $tmplog
+	retry=15
+	while test `cat $tmplog | grep HOST_POWER= | awk -F= '{ print $2 }' | grep -c ON` -ne $1
+	do
+		sleep 2
+		$tools/locfg.pl -s $ilo -u $ilo_user -p $(echo $ilo_pass | base64 -d) -f $lib/powerstate.xml > $tmplog
+		let retry=$retry-1
+		test $retry -eq 0 && return 1
+	done
+	return 0
+}
+
+dracerr() {
+	echo "error:"
+	cat $tmplog
+	exit 1
+}
+
+case "$1" in
+on)
+	echo "Powering on system..."
+	go=1
+	while test $go -eq 1
+	do
+		ilocmd 0 $lib/poweron.xml
+		waitpower 1
+		go=$?
+	done
+	exit 0
+	;;
+off)
+	echo "Powering off system..."
+	go=1
+	while test $go -eq 1
+	do
+		ilocmd 0 $lib/poweroff.xml
+		sleep 3
+		ilocmd 0 $tools/holdpwrbtn.xml
+		waitpower 0
+		go=$?
+	done
+	exit 0
+	;;
+cold)
+	ilocmd 0 $lib/cold.xml;;
+reset)
+	ilocmd 0 $lib/reset.xml;;
+status)
+	getstat;;
+*)
+	echo "unknown op: $1"
+	usage
+esac
+
+rm -f $tmp $tmplog
+exit 0

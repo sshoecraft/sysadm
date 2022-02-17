@@ -1,0 +1,51 @@
+* Mon May 03 2010 Steve Shoecraft (stephen.shoecraft@hp.com)
+version 1.7, release 1
+updated xp.c to check for COMPAQ vendor (was HP only) for old HSV(EVA) disks
+
+* Sat Apr 03 2010 Steve Shoecraft (stephen.shoecraft@hp.com)
+version 1.7, release 0
+enabled display of vg names
+enabled display of dg names
+remove duplicate serial+cu:ldev (-a switch to show all)
+wrap sources needed from util lib into utils.c
+change arg processing to use getopt (-h for help)
+
+* Fri Feb 26 2010 Steve Shoecraft (stephen.shoecraft@hp.com)
+version 1.6, release 1
+set size to -1 when capacity returns error (used to skip lun)
+
+* Fri Dec 11 2009 Steve Shoecraft (stephen.shoecraft@hp.com)
+version 1.5, release 0
+added hsv support
+
+* Thu Sep 10 2009 Steve Shoecraft (stephen.shoecraft@hp.com)
+version 1.4, release 0
+enabled display of volume on esx (3+) servers
+
+* Fri Nov 21 2008 Steve Shoecraft (stephen.shoecraft@hp.com)
+version 1.3, release 0
+enabled display of polyserv devices
+
+* Fri Nov 21 2008 Steve Shoecraft (stephen.shoecraft@hp.com)
+version 1.2, release 0
+added -v option (version)
+fixed bug on linux which would sometimes return negative lun sizes
+enabled uid 0 check for all (was just for linux only)
+
+* Wed Oct 29 2008 Steve Shoecraft (stephen.shoecraft@hp.com)
+version 1.1, release 0
+port to hpux
+use SG_IO ioctl on linux 1st, fallback to SEND_COMMAND to remove warning on > 2.6.18 kernels
+
+* Wed May 21 2008 Steve Shoecraft (stephen.shoecraft@hp.com)
+version 1.0, release 3
+modified to enable unlimited devices
+
+* Fri May 16 2008 Steve Shoecraft (stephen.shoecraft@hp.com)
+version 1.0, release 2
+added -c option (comma delimited)
+added -n option (sort by device name)
+
+* Mon May 12 2008 Steve Shoecraft (stephen.shoecraft@hp.com)
+version 1.0, release 1
+Initial Release

@@ -1,0 +1,43 @@
+<config>
+	<version>+HWVER+</version>
+	<name>+NAME+</name>
+	<datacenter>+DC+</datacenter>
+	<computepath>+CLUST+</computepath>
+	<memorySizeMB>+MEM+</memorySizeMB>
+	<numCpu>+VCPU+</numCpu>
+	<disks>
+		<disk>
+			<size>+OSSIZE+</size>
+			<thin>0</thin>
+		</disk>
+		<disk>
+			<size>+HD1SIZE+</size>
+			<thin>0</thin>
+		</disk>
+		<disk>
+			<size>+HD2SIZE+</size>
+			<thin>0</thin>
+		</disk>
+		<disk>
+			<size>+HD3SIZE+</size>
+			<thin>0</thin>
+		</disk>
+		<disk>
+			<size>+HD4SIZE+</size>
+			<thin>0</thin>
+		</disk>
+	</disks>
+	<nics>
+		<nic>
+			<type>+NIC+</type>
+			<network>+NET+</network>
+		</nic>
+	</nics>
+	<cdrom>
+		<path>[+COE+] +ISO+</path>
+	</cdrom>
+	<guestId>+ID+</guestId>
+	<annotation>+ANN+</annotation>
+	<poweron>yes</poweron>
+	<profile>+PROFILE+</profile>
+</config>

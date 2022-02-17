@@ -1,0 +1,114 @@
+#!/bin/bash -x
+
+GETISO_VERSION=1.1
+# 1.0	?	initial
+# 1.1	10/8/20	revamp gw code
+
+. /usr/local/etc/.builder
+real_way=""
+while true
+do
+	case "$1" in
+	"-I")
+		shift
+		user_nic=$1
+		shift
+		;;
+	"-w")
+		shift
+		real_way=$1
+		shift
+		;;
+	"-p")
+		shift
+		isopass=$1
+		shift
+		;;
+	*)
+		break;;
+	esac
+done
+
+hn=$1
+distro=$2
+vers=$3
+arch=$4
+way=$5
+profile=$6
+ip=${7}
+vlan=${8}
+nm=${9}
+gw=${10}
+ns=${11}
+
+#exit 0
+tmp=/tmp/getiso.$$
+trap '{ echo "Aborting." ; rm -f $tmp; exit 1; }' INT TERM ABRT
+
+me=`readlink -f $0`
+if test -z "$arch"; then
+	echo "usage: $me -w <real_way> <hostname> <distro> <version> <arch> [<way> <profile> <ip> <vlan> <netmask> <gateway> <nameserver>]"
+	exit 1
+fi
+
+test -z "$way" && way=linuxcoe
+test -z "$profile" && profile=default
+test -z "$ip" && ip=`host $hn | head -1 | awk '{ print $NF }'`
+test -z "$vlan" && vlan=0
+test -z "$nm" && nm=255.255.255.0
+if test -z "$gw" -a $(echo "$ip" | grep -ic 'dhcp') -eq 0; then
+	bcast=$(ipcalc --broadcast $ip $nm | awk -F= '{ print $2 }')
+	n=$(echo $bcast | awk -F. '{ print $NF }')
+	((n--))
+	s=$(echo $bcast | awk -F. '{ print $1"."$2"."$3 }')
+	if test $(ping -c 2 -W 2 ${s}.${n} > /dev/null 2>&1); then
+		n=1
+		if test $(ping -c 2 -W 2 ${s}.${n} > /dev/null 2>&1); then
+			echo "error: unable to determine GW!"
+			exit 1
+		fi
+	fi
+	gw=${s}.${n}
+fi
+test -z "$ns" && ns=10.5.205.11
+if test "$distro" = "VMWare"; then
+	nic=vmnic0
+else
+	nic=eth0
+fi
+test -n "$user_nic" && nic=$user_nic
+
+cat > $tmp << EOF
+system=$hn
+hostname=$hn
+namesvr=$ns
+method=HTTP
+profile=$profile
+os=$distro%20$vers
+waystation=$way
+real_way=$real_way
+kbd=us
+lang=en_US.UTF-8
+timezone=UTC
+mouse=generic3ps%2F2
+utc=Yes
+netdev=$nic
+arch=$arch
+image=iso
+Root_Pass=$isopass
+Root_Pass=$isopass
+EOF
+if test `echo "$ip" | grep -ic 'dhcp'` -eq 0; then
+cat >> $tmp << EOF
+ip=$ip
+vlan=$vlan
+netmask=$nm
+gateway=$gw
+EOF
+fi
+dir=`dirname $me`
+log=`mktemp`
+$dir/replay.pl $tmp > $log 2>&1
+test `cat $log | grep -c ^ERR` -eq 0 && rm -f $tmp
+cat $log; rm -f $log
+exit 0

@@ -1,0 +1,31 @@
+#!/bin/bash
+if test $# -lt 2; then
+	echo "usage: admssh <src> <dest>"
+	exit 1
+fi
+SRC=""
+let i=1
+while test $i -lt $#
+do
+	let si=$i
+	idx="\$$si"
+	arg=`eval echo $idx`
+	test `echo "$arg" | grep -c :` -gt 0 && arg="sysadm@$arg"
+	SRC="$SRC $arg"
+	let i=$i+1
+done
+arg="\$$#"
+DEST=`eval echo $arg`
+test `echo "$DEST" | grep -c :` -gt 0 && DEST="sysadm@$DEST"
+tmp=/dev/shm/admscp.$$
+trap '{ rm -f $tmp; }' EXIT
+OPTS="-F /dev/null -o ConnectTimeout=5 -o PreferredAuthentications=publickey -o StrictHostKeyChecking=no"
+if test -f /usr/local/lib/tools/key.gz; then
+	cat /usr/local/lib/tools/key.gz | gzip -d > $tmp
+	chmod 600 $tmp
+	IDENT="-i $tmp"
+fi
+scp $IDENT -B -q $OPTS $ARGS $SRC $DEST
+status=$?
+rm -f $tmp
+exit $status

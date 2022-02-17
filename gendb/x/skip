@@ -1,0 +1,7 @@
+dbo.AutomationErrors
+dbo.BatchIssue
+dbo.ChangeLog
+dbo.CI_VW
+dbo.MBS
+dbo.MBSAutomationLog
+dbo.OPHPSCDEVICEM1

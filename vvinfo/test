@@ -1,0 +1,22 @@
+#!/bin/bash
+test -z "$1" && exit 1
+#if test `echo $1 | grep -c 'vm[0-9][0-9][0-9]$'` -gt 0; then
+#if test `echo $1 | grep -c 'vm[0-9][0-9][0-9]$'` -gt 0; then
+esxconf -a -s "$1" > /dev/null 2>&1
+if test $? -eq 0; then
+	/usr/local/bin/esxshell start $1
+	/usr/local/lib/tools/esxcmd $1 "rm -f /tmp/vvinfo"
+	/usr/local/lib/tools/esxscp vvinfo $1:/tmp
+	/usr/local/lib/tools/esxcmd $1 "/tmp/vvinfo -s"
+#	/usr/local/lib/tools/esxcmd $1 "/tmp/vvinfo"
+	/usr/local/bin/esxshell stop $1
+else
+/usr/local/lib/tools/admssh $1 "sudo bash -c \"rm -f /tmp/vvinfo\""
+/usr/local/lib/tools/admscp vvinfo $1:/tmp > /dev/null 2>&1
+#ssh -t $1 "sudo bash -c \"rm -f /tmp/vvinfo\""
+#scp vvinfo $1:/tmp > /dev/null 2>&1
+test $? -ne 0 && exit 1
+/usr/local/lib/tools/admssh $1 "sudo bash -c \"chmod 755 /tmp/vvinfo; /tmp/vvinfo -s; rm -f /tmp/vvinfo\""
+#/usr/local/lib/tools/admssh $1 "sudo bash -c \"chmod 755 /tmp/vvinfo; /tmp/vvinfo -V\""
+#ssh -t $1 "sudo bash -c \"chmod 755 /tmp/vvinfo; /tmp/vvinfo -V\""
+fi

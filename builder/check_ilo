@@ -1,0 +1,170 @@
+#!/bin/bash
+
+. /usr/local/etc/.builder
+
+usage() { echo "usage: $0 [-u <username> -p <password>] <ilo dns name or ip>" 1>&2; exit 1; }
+
+while getopts ":u:p:" o
+do
+	case "${o}" in
+	u)
+		ilo_user=${OPTARG}
+		ilo_pass=""
+		;;
+	p)
+		ilo_pass=$(echo ${OPTARG} | base64)
+		;;
+	*)
+		usage
+		;;
+	esac
+done
+shift $((OPTIND-1)) 
+if [ -z "${ilo_user}" ] || [ -z "${ilo_pass}" ]; then
+    usage
+fi
+test -z "$1" && exit 1
+
+ilo="$1"
+#if test `echo "$ilo" | grep -c :` -gt 0; then
+#	ip=`echo $ilo | awk -F: '{ print $1 }'`
+#	port=`echo $ilo | awk -F: '{ print $2 }'`
+#	ilo="$ip"
+#fi
+
+tools=/usr/local/lib/tools
+lib=/usr/local/lib/builder
+if test `echo $0 | grep -c '^\./'` -eq 1; then
+        tools="."
+        lib="."
+fi
+
+#tmp=/tmp/ilofw.tmp
+tmp=/tmp/ilofw.$$
+logfile="$tmp".log
+trap '{ echo "Aborting." ; rm -f $tmp $logfile; exit 1; }' INT TERM ABRT
+
+CMD="$tools/locfg.pl -s $ilo -u $ilo_user -p $(echo $ilo_pass | base64 -d)"
+wait_ilo() {
+#	echo "Waiting for ilo to respond..."
+	let retry=30
+	while true
+	do
+		info=`$tools/detect_ilo $ilo 2>/dev/null`
+#		echo "info: $info"
+		if test -n "$info"; then
+			ilo_fw=`echo $info | awk -F, '{ print $2 }'`
+#			echo "ilo_fw: $ilo_fw"
+			test -z "$ilo_fw" && ilo_fw=0.0
+			fw_ver=`echo "0 k $ilo_fw 100 * p" | dc  | sed 's:\.00$::'`
+			if test -z "$fw_ver"; then
+				echo "error: fw_ver empty! (ilo_fw: $ilo_fw)"
+				exit 1
+			fi
+			test $fw_ver -eq $1 && break
+		fi
+		sleep 10
+		let retry=$retry-1
+		if test $retry -eq 0; then
+			echo "error: timeout waiting for ilo!"
+			exit 1
+		fi
+	done
+}
+
+# Get latest versions
+for b in ilo1 ilo2 ilo3 ilo4 ilo5
+do
+	n=`ls $lib/${b}_*.bin | sort | tail -1 | sed -e "s:^${lib}/${b}_::" -e "s:\.bin$::"`
+	eval ${b}_latest=$n
+done
+
+info=`$tools/detect_ilo $ilo`
+ilo_ver=`echo $info | awk -F, '{ print $1 }'`
+ilo_fw=`echo $info | awk -F, '{ print $2 }'`
+echo "iLO: IP: $ilo, Version: $ilo_ver, Firmware: $ilo_fw"
+
+# Set license
+case $ilo_ver in
+2) license="3DVKBQ8TYC9TJVK8Z9ZXHG7XR";;
+3) license="3G7VQ75HR89WL5HXYBG83Y2YB";;
+4) license="3JX9MCHM3Z5GBLC3R4QWGGVDW";;
+5) license="3GLMHJ69WD42R9L2ST674NLWM";;
+esac
+if test -n "$license"; then
+	echo "Setting iLO license..."
+	cat $lib/license.xml | sed "s|+++KEY+++|$license|" > $tmp
+#	$tools/locfg.pl -s $ilo -u $ilo_user -p $ilo_pass -f $tmp >> $logfile
+	$CMD -f $tmp >> $logfile
+	if test `cat $logfile | grep "MESSAGE=" | grep -c -v 'No error'` -gt 0; then
+		echo "ERROR: message from ilo"
+		cat $logfile
+		exit 1
+	fi
+fi
+
+fw_ver=`echo "0 k $ilo_fw 100 * p" | dc  | sed 's:\.00$::'`
+done=0
+while true
+do
+	old_fw_ver="$fw_ver"
+	case $ilo_ver in
+	2)
+		if test $fw_ver -lt $ilo2_latest; then
+			fw_ver=$ilo2_latest
+		else
+			done=1
+		fi
+		;;
+	3)
+		if test $fw_ver -lt 128; then
+			fw_ver=128
+		elif test $fw_ver -lt $ilo3_latest; then
+			fw_ver=$ilo3_latest
+		else
+			done=1
+		fi
+		;;
+	4)
+		if test $fw_ver -lt $ilo4_latest; then
+			fw_ver=$ilo4_latest
+		else
+			done=1
+		fi
+		;;
+	5)
+		if test $fw_ver -lt $ilo5_latest; then
+			fw_ver=$ilo5_latest
+		else
+			done=1
+		fi
+		;;
+	*)
+		done=1;;
+	esac
+	test $done -eq 1 && break
+	file=ilo"$ilo_ver"_"$fw_ver".bin
+        old_fw="$ilo_fw"
+	echo "Upgrading iLO Firmare to: $fw_ver"
+        cat $lib/updfw.xml | sed "s|+++IMAGE+++|$lib/$file|" > $tmp
+#	$tools/locfg.pl -s $ilo -u $ilo_user -p $ilo_pass -f $tmp >> $logfile
+	$CMD -f $tmp >> $logfile
+	if test `cat $logfile | grep "MESSAGE=" | grep -c -v 'No error'` -gt 0; then
+		echo "ERROR: message from ilo"
+		cat $logfile
+		exit 0
+	fi
+	wait_ilo $fw_ver
+        info=`$tools/detect_ilo $ilo`
+        ilo_ver=`echo $info | awk -F, '{ print $1 }'`
+        ilo_fw=`echo $info | awk -F, '{ print $2 }'`
+	fw_ver=`echo "0 k $ilo_fw 100 * p" | dc  | sed 's:\.00$::'`
+	if test "$fw_ver" = "$old_fw_ver"; then
+		echo "error: update failed!"
+		exit 1
+#	else
+#		echo "Upgrade Successful"
+	fi
+done
+rm -f $tmp $logfile
+exit 0

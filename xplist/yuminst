@@ -1,0 +1,6 @@
+#!/bin/sh
+echo "#!/bin/sh" > /tmp/xplist.tmp
+echo "/home/sysadm/bin/timeout 30 ssh -n -q -o BatchMode=yes \$1 \"sudo bash -c 'yum -y install xplist'\"" >> /tmp/xplist.tmp
+chmod +x /tmp/xplist.tmp
+worker /home/sysadm/data/lists/allservers 128 /tmp/xplist.tmp
+rm -f /tmp/xplist.tmp

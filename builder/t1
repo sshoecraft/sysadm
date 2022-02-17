@@ -1,0 +1,7 @@
+
+use Data::Dumper;
+
+my $opts = 'key => "scsi0:1.VirtualSSD", value => 1';
+#print Dumper($opts);
+my @blah = split '\|', $opts;
+print Dumper(@blah);

@@ -1,0 +1,10 @@
+#!/bin/bash
+uname -n
+if test ! -d /sys/class/fc_host; then
+	echo "error: no fc_host found"
+	exit 1
+fi
+for h in /sys/class/fc_host/host*;
+do
+	cat $h/port_name 2>/dev/null;
+done

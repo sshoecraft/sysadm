@@ -1,0 +1,20 @@
+#!/bin/bash
+let i=1
+rm -f input
+let num_input=40
+while test $i -le $num_input
+do
+        echo input$i >> input
+        let i=$i+1
+done
+n=`./worker input 128 /bin/echo | grep ^input | wc -l`
+if test $n -ne $num_input; then
+	echo "input test failed!"
+	exit 1
+fi
+num_servers=`cat ~esxadmin/etc/esxservers | wc -l`
+n=`./worker ~esxadmin/etc/esxservers 512 /bin/echo 'server: ' | grep ^server | wc -l`
+if test $n -ne $num_servers; then
+	echo "server test failed!"
+	exit 1
+fi

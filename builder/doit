@@ -1,0 +1,3 @@
+#!/bin/bash
+#admssh $1 "sudo su - root -c \"yum clean all; yum -y update uson-altiris-config\""
+admssh $1 "sudo su - root -c \"altiris status\""

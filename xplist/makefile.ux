@@ -1,0 +1,22 @@
+
+CC=cc
+#CFLAGS=
+CFLAGS=-DDEBUG
+
+NAME=xplist
+PROG=$(NAME)$(EXE)
+SRCS=main.c xp.c esx.c vg.c dg.c utils.c list.c linux.c hpux.c win32.c
+OBJS=$(SRCS:.c=.o)
+
+.SUFFIXES: .c .o
+.c.o:
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(PROG): $(OBJS)
+	$(CC) $(CFLAGS) -o $(PROG) $(OBJS)
+
+clean:
+	rm -f $(PROG) $(OBJS)
+
+install: $(PROG)
+	pbrun ksh -c "install -s -o root -g root -m 755 $(PROG) /usr/local/bin"

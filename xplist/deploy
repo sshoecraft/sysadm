@@ -1,0 +1,44 @@
+#!/bin/bash
+
+NAME=xplist
+v=`cat version.h | awk '{ print $3 }'`
+eval ver=$v
+test -f release && rel=`cat release`
+test -z "$rel" && rel=0
+arch=`uname -m`
+RPMNAME="xplist-$ver-$rel.$arch"
+ROOT=$HOME/rpmbuild/BUILDROOT/$RPMNAME
+
+mkspec() {
+cat $NAME.spec.pre | sed "s:<VERSION>:$ver:" | sed "s:<RELEASE>:$rel:" > $NAME.spec
+
+# Files
+echo "" >> $NAME.spec
+echo "%files" >> $NAME.spec
+CWD=`pwd`
+(cd $ROOT || exit 1; find . | sed "s:^\.::" > $CWD/$NAME.spec.files)
+while read n
+do
+	test -z "$n" && continue
+	test -f "$n" || continue
+	stat --format="%%attr(%a,%U,%G) %n" "$n" >> $NAME.spec
+done < $NAME.spec.files
+rm -f $NAME.spec.files
+
+# Changelog
+if test -f changelog; then
+	echo "" >> $NAME.spec
+	echo "%changelog" >> $NAME.spec
+	cat changelog >> $NAME.spec
+fi
+}
+
+
+make clean
+make install BUILDROOT=$ROOT
+mkspec
+cat $NAME.spec
+rpmbuild -bb $NAME.spec || exit 1
+rm -f $NAME.spec
+/usr/local/lib/tools/admscp $HOME/rpmbuild/RPMS/$arch/$RPMNAME.rpm ddc-coe:/tmp || exit 1
+/usr/local/lib/tools/admssh ddc-coe "sudo bash -c \"mkdir -p /coe/usonforge/6/$arch; mv /tmp/$RPMNAME.rpm /coe/usonforge/6/$arch; /root/syncer/mkrepo usonforge\""

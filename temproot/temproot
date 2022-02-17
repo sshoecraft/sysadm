@@ -1,0 +1,17 @@
+#!/bin/bash
+testing=0
+test -z "$2" && exit 1
+MY="mysql --database=sysadm --user=sysadm_rw --password=sysadm_rw"
+script=dotemproot
+lib=/usr/local/lib/tools
+test $testing -eq 1 && lib=.
+/usr/local/bin/timeout 10 /usr/local/bin/admssh $1 "sudo su - root -c \"rm -f /tmp/$script\""
+test $? -ne 0 && exit 1
+/usr/local/bin/timeout 10 /usr/local/bin/admscp $lib/$script $1:/tmp
+/usr/local/bin/timeout 10 /usr/local/bin/admssh $1 "sudo /tmp/$script $2; rm -f /tmp/$script"
+rec=$($MY -N -B -e "select CONCAT_WS(',',hostname,user,days) from temproot where hostname = '$1' and user = '$2'")
+if test -n "$rec"; then
+	$MY -N -B -e "update temproot set days = 14 where hostname = '$1' and user = '$2'"
+else
+	$MY -N -B -e "insert into temproot (hostname,user) values ('$1','$2')"
+fi

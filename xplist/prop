@@ -1,0 +1,9 @@
+#!/bin/bash
+rm -f /tmp/xplist
+./doinst localhost
+v=`cat version.h | awk '{ print $3 }'`
+eval ver=$v
+rel=`cat release`
+let rel=$rel-1
+dev2g3t0020-nodist-nover-noarch xplist-$ver-$rel.noarch.rpm
+/usr/local/bin/g3t0020-apt-yum-sync

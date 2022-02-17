@@ -1,0 +1,29 @@
+#!/bin/bash
+if test -z "$1"; then
+	echo "usage: $0 <ci>"
+	exit 1
+fi
+tmp=/tmp/listoa.$$
+/usr/local/bin/callsub -enc $1 > $tmp 2>/dev/null
+if test `cat $tmp | grep -c -e Error` -gt 0; then
+	n=`echo $1 | awk -F. '{ print $1 }'`
+	test -z "$n" && n="$1"
+	/usr/local/bin/callsub -enc $n > $tmp 2>/dev/null
+fi
+#exit 0
+while read line
+do
+#	echo "line: $line"
+	if test `echo $line | grep -c Error` -gt 0; then
+		echo $line
+		exit 1
+	fi
+	test `echo $line | grep -c ^Enclosure:` -gt 0 && enc=`echo $line | awk -F': ' '{ print $2 }'`
+	test `echo $line | grep -c "^OA IP:"` -gt 0 && ip=`echo $line | awk -F': ' '{ print $2 }'`
+done < $tmp
+rm -f $tmp
+host "$enc"oa | awk '{ print $1 }'
+#host $ip
+#num=`echo $enc | awk '{ print substr($0,length($0)-3) }'`
+#echo "$enc $ip $num"
+exit 0

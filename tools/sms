@@ -1,0 +1,48 @@
+#!/bin/bash
+
+#T-Mobile: phonenumber@tmomail.net
+#Virgin Mobile: phonenumber@vmobl.com
+#Cingular: phonenumber@cingularme.com
+#Sprint: phonenumber@messaging.sprintpcs.com
+#Verizon: phonenumber@vtext.com
+#Nextel: phonenumber@messaging.nextel.com 
+#AT&T: txt.att.net
+
+if test -z "$1"; then
+	echo "usage: sms [-s subject] <number> <message|file>"
+	exit 1
+fi
+
+while true
+do
+        c=`echo $1 | awk '{ print substr($0,0,1) }'`
+        if test "$c" = "-"; then
+                echo arg: $1
+                case $1 in
+                -s)
+                        shift
+                        subj=$1
+                        ;;
+                *)
+                        echo "error: invalid argument"
+                        usage
+                esac
+                shift
+        else
+                break
+        fi
+done
+
+tmp=/tmp/sms.$$
+SENDTO="$number@messaging.sprintpcs.com"
+#
+rm -f $tmp; touch $tmp
+test -n "$SUBJ" && echo "Subject: $SUBJ" >> $tmp
+echo "" >> $tmp
+if test -f "$MSG"; then
+        cat "$MSG" >> $tmp
+else
+        echo "$MSG" >> $tmp
+fi
+cat $tmp | /usr/sbin/sendmail $SENDTO
+rm -f $tmp

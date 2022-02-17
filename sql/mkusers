@@ -1,0 +1,24 @@
+#!/bin/bash
+ROOTPASS=
+db=`cat ~/.my.cnf | grep ^database= | awk -F= '{ print $2 }'`
+user=`cat ~/.my.cnf | grep ^user= | awk -F= '{ print $2 }'`
+pass=`cat ~/.my.cnf | grep ^password= | awk -F= '{ print $2 }'`
+rw_pass="9m7bqju19x"
+for w in '%' localhost
+do
+	mysql --database=mysql --user=root --password=$RPASS -e "drop user '$db"_"ro'@'$w'" > /dev/null 2>&1
+	mysql --database=mysql --user=root --password=$RPASS -e "create user '$db"_"ro'@'$w'"
+	mysql --database=mysql --user=root --password=$RPASS -e "drop user '$db"_"rw'@'$w'" > /dev/null 2>&1
+#	mysql --database=mysql --user=root --password=$RPASS -e "create user '$db"_"rw'@'$w' identified by '$db"_"rw'"
+# XXX why again?
+	mysql --database=mysql --user=root --password=$RPASS -e "create user '$db"_"rw'@'$w' identified by '$rw_pass'"
+done
+mysql --database=mysql --user=root --password=$RPASS -e "drop user '$user'@'localhost'" > /dev/null 2>&1
+mysql --database=mysql --user=root --password=$RPASS -e "create user '$user'@'localhost' IDENTIFIED BY '$pass'"
+for w in % localhost
+do
+	mysql --database=mysql --user=root --password=$RPASS -e "grant select on $db.* to '$db"_"ro'@'$w'"
+	mysql --database=mysql --user=root --password=$RPASS -e "grant select,insert,update,delete on $db.* to '$db"_"rw'@'$w'"
+done
+mysql --database=mysql --user=root --password=$RPASS -e "grant all on $db.* to '$user'@'localhost'"
+mysql --database=mysql --user=root --password=$RPASS -e "FLUSH PRIVILEGES"

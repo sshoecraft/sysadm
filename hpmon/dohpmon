@@ -1,0 +1,11 @@
+#!/bin/bash
+test -z "$1" && exit 1
+
+logdir=/tmp/hpmon
+logfile=$logdir/$1.log
+
+mkdir -p $logdir
+./hpmon $1 > $logfile 2>&1
+s=`stat --print="%s" $logfile`
+test -z "$s" && s=0
+test $s -lt 1 && rm -f $logfile

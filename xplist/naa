@@ -1,0 +1,29 @@
+The identifier comes in the form of naa.aaaaaaaabbbbbbbbbbbbccdddddddddd .  I.ve been able to find a somewhat reliable means to describe a, b, and d, but for some odd reason, c does not quite fit in.  But, for what it.s worth, I.ve been able to gather vendor, device, and lun.
+
+The breakdown is as follows:
+
+    aaaaaaaa is an 8 digit vendor identifier, and I.ve listed the vendors we use below, as well as others I.ve been able to find online:
+        60060480 <. EMC
+        60060e80 <. HDS
+        60a98000 <. NetApp
+        60060160 <. DGC (Clarrion?)
+        6090a038 <. EQL
+    bbbbbbbbbbbb is a 12 digit serial # of the device providing the storage.  This may differ from device to device, but matches up perfectly to the id.s from our Symm.  Our mileage may vary, but it.s held up so far.
+    cc is a 2 digit code for something.  No idea as of yet, and I.ve managed to stump some other smart folks.  If anyone has any ideas on this one, please share.  It.s very frustrating to puzzle out 30 / 32 digits, and leave 2 digits in the wind.
+    dddddddddd is a 10 digit LUN identifier.  This differed based on the device on how the device ID is actually represented.
+        HDS . was the most straightforward.  It represented in the naa id, the actual device ID being used on the array side.
+        EMC . was very confusing.  You will have to take the 10 digits in pairs, that will give you the ASCII code in hex, for the pair, which after being concatenated give  you the device id.  Very straightforward, I know.  Here.s an example:
+            60060480bbbbbbbbbbbb533031464446
+            60060480 makes this EMC
+            bbbbbbbbbbbb serial number which I.ll keep to myself.
+            53 which will drive me crazy
+            3031464446 .> which will break down to 30  31  46  44  46 .> which gives us a device id of 01FDF
+                30 .> converted to decimal from hex= 48 .> which in ASCII = 0
+                31 .> converted to decimal from hex= 49 .> which in ASCII = 1
+                46 .> converted to decimal from hex= 70 .> which in ASCII = F
+                44 .> converted to decimal from hex= 68 .> which in ASCII = D
+                46 .> converted to decimal from hex= 70 .> which in ASCII = F
+        Clear as mud, right?
+
+
+http://storagemeat.blogspot.com/2012/08/decoding-wwids-or-how-to-tell-whats-what.html

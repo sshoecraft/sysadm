@@ -1,0 +1,29 @@
+
+int open_atc_cursor(char *owner,char *table_name) {
+	sql_return_code = 0;
+	EXEC SQL DECLARE atc_cursor CURSOR FOR \
+		SELECT column_id,column_name,data_type,data_length, \
+			data_precision,data_scale \
+		FROM all_tab_columns \
+		WHERE owner = :owner AND table_name = :table_name
+		ORDER BY column_id;
+	if (sql_return_code != 0) return 1;
+	EXEC SQL OPEN atc_cursor;
+	return (sql_return_code == 0 ? 0 : 1);
+}
+
+int fetch_atc_record(ATC_REC *rec) {
+	sql_return_code = 0;
+	EXEC SQL FETCH atc_cursor INTO :rec;
+	if (sql_return_code == 0) {
+		trim(rec->column_name);
+		trim(rec->data_type);
+	}
+	return (sql_return_code == 0 ? 0 : 1);
+}
+
+int close_atc_cursor(void) {
+	sql_return_code = 0;
+	EXEC SQL CLOSE atc_cursor;
+	return (sql_return_code == 0 ? 0 : 1);
+}

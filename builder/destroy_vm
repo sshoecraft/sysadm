@@ -1,0 +1,90 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Data::Dumper;
+#use YAML qw(LoadFile Load Dump);
+use XML::Simple;
+use VMware::VIRuntime;
+use feature "switch";
+
+use lib qw (/usr/local/lib/perl);
+use utils;
+
+$debug = 0;
+
+my $vm_name = $ARGV[0];
+#$vm_name = "ol7-64";
+exit 0 unless($vm_name);
+dprintf(1,"VM name: %s\n", $vm_name);
+
+my $server = $ARGV[1];
+$server = 'usodplvvc001' unless($server);
+dprintf(3,"server: %s\n", $server);
+
+my ($dnsname,$aliases,$addrtype,$length,@addrs) = gethostbyname($server);
+unless($dnsname) {
+	printf("error: unable to resolve: %s\n", $server);
+	exit(1);
+} else {
+	$server = $dnsname;
+	dprintf(3,"NEW server: %s\n", $server);
+}
+dprintf(1,"VMware server: %s\n", $server);
+
+# Get user and pass
+my $user = `cat /usr/local/etc/.vim  | grep "^$server" | head -1 | awk '{ print \$2 }'`;
+chomp($user);
+$user = "" unless($user);
+if (!length($user)) {
+	printf("error: unable to find user for server, aborting\n");
+	exit(1);
+}
+my $pass = `/usr/local/bin/vim_cred -g -x -s '$server' -u '$user'`;
+chomp($pass);
+dprintf(3,"user: %s, pass: %s\n", $user, $pass);
+
+dprintf(1,"Connecting to server...\n");
+$ENV{'VI_PROTOCOL'} = 'https';
+$ENV{'VI_SERVER'} = $server;
+$ENV{'VI_SERVICEPATH'} = '/sdk';
+$ENV{'VI_USERNAME'} = $user;
+$ENV{'VI_PASSWORD'} = $pass;
+Opts::parse();
+#Opts::validate();
+dprintf(3,"Connecting...\n");
+Util::connect();
+
+if (0) {
+$Util::script_version = "1.0";
+
+my %opts = (
+	vm => {
+		type => "=s",
+		help => "VM name",
+		required => 1,
+	},
+);
+
+# read/validate options and connect to the server
+Opts::add_options(%opts);
+Opts::parse();
+Opts::validate();
+Util::connect();
+
+my $xvm_name = Opts::get_option('vm');
+}
+
+my $vm = Vim::find_entity_view (view_type => 'VirtualMachine', filter => { 'name' => $vm_name} );
+exit(1) unless($vm);
+$vm->PowerOffVM() if ($vm->runtime->powerState->val ne 'poweredOff');
+$vm->Destroy_Task();
+#do
+#	my $vm = Vim::find_entity_view (view_type => 'VirtualMachine', filter => { 'name' => $vm_name} );
+#	if (defined($vm) == 0) {
+#		last;
+#	} else {
+#		sleep(1);
+#	}
+#}
+
+Util::disconnect();

@@ -1,0 +1,48 @@
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <sqlca.h>
+#include "gendb.h"
+
+EXEC SQL BEGIN DECLARE SECTION;
+#define NEED_SQL_ERROR_TEXT
+#include "oracle.h"
+EXEC SQL END DECLARE SECTION;
+
+static int connected = 0;
+static void sql_not_found(void);
+static void sql_error(void); 
+static char temp[2048];
+
+int set_ro_trans(void) {
+	EXEC SQL SET TRANSACTION READ ONLY;
+	return (sql_return_code == 0 ? 0 : 1);
+}
+
+int set_rw_trans(void) {
+	EXEC SQL SET TRANSACTION USE ROLLBACK SEGMENT PROBERBS;
+	return (sql_return_code == 0 ? 0 : 1);
+}
+
+int connect_to_db(char *userid) {
+	sql_return_code = 0;
+	if (!connected) {
+		EXEC SQL WHENEVER SQLERROR DO sql_error();
+		EXEC SQL WHENEVER NOT FOUND DO sql_not_found();
+		EXEC SQL CONNECT :userid; 
+		if (sql_return_code == 0) connected = 1;
+	}
+	return (sql_return_code == 0 ? 0 : 1);
+}
+
+int rollback_trans(void) {
+	sql_return_code = 0;
+	EXEC SQL ROLLBACK; 
+	return (sql_return_code == 0 ? 0 : 1);
+}
+
+int commit_trans(void) {
+	sql_return_code = 0;
+	EXEC SQL COMMIT;
+	return (sql_return_code == 0 ? 0 : 1);
+}

@@ -1,0 +1,15 @@
+
+worker: worker.c
+	cc -Wall -m32 -o worker worker.c -lpthread
+
+install: worker
+	sudo install -c -o root -g root -m 755 $(NAME) /usr/local/bin
+	cp worker $$HOME/bin
+
+test:
+#	./worker -t 5,./k ./l 4 ./x
+#	./worker -t 5 ./l 4 ./x
+	./worker ./s 4 $$HOME/data/utils/collect_dccsan
+
+clean:
+	rm -f worker

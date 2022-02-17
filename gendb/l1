@@ -1,0 +1,15 @@
+FROM vRM_Asset_Item ai
+LEFT OUTER JOIN _vUSON_Concat_Asset_SvcSys cas ON ai.Guid = cas.assetguid
+LEFT OUTER JOIN vAsset va ON ai.Guid = va._ResourceGuid
+LEFT OUTER JOIN _vUSON_ComputerType ct ON ct.Guid = ai.Guid
+LEFT OUTER JOIN Inv_AeX_AC_Identification id ON ai.Guid = id._ResourceGuid
+LEFT OUTER JOIN vAssetLocation val ON ai.Guid = val._AssetGuid
+LEFT OUTER JOIN vComputer vc ON ai.Guid = vc.Guid
+LEFT OUTER JOIN _vUSON_Services_Systems ss ON cas.sysGuid = ss.sysGuid
+LEFT OUTER JOIN  Inv_USON_System_Info si ON ai.Guid = si._ResourceGuid
+LEFT OUTER JOIN Inv_USON_MPN mpn ON ai.Guid = mpn._ResourceGuid
+LEFT OUTER JOIN Inv_USON_Backup_Info bi ON ai.Guid = bi._ResourceGuid
+LEFT OUTER JOIN Inv_USON_System_Info usi ON ai.Guid = usi._ResourceGuid 
+LEFT OUTER JOIN Inv_USON_System_Support uss ON ai.Guid = uss._ResourceGuid
+LEFT OUTER JOIN Inv_Comment ic ON ai.Guid = ic._ResourceGuid
+LEFT OUTER JOIN Inv_OS_Operating_System os ON os._ResourceGuid = ID._ResourceGuid

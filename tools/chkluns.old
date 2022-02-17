@@ -1,0 +1,16 @@
+#!/bin/bash
+test "$1" = "-x" && strip=1
+test -z "$1" && exit 1
+tmp=/tmp/chkluns.$$
+farminfo -x $1 > $tmp
+if test $? -ne 0; then
+	cat $tmp
+	rm -f $tmp
+	exit 1
+fi
+while read h
+do
+	c=`esxconf -s $h config.storageDevice.scsiLun | grep uuid | wc -l`
+	echo "$h: $c"
+done < $tmp
+rm -f $tmp

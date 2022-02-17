@@ -1,0 +1,80 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use XML::Simple;
+use Data::Dumper;
+use IO::File;
+use Getopt::Long;
+
+my $TIMEOUT = 30;
+my $debug = 0;
+
+my $ip = $ARGV[0];
+$ip = "" unless($ip);
+if (length($ip) < 1) {
+	printf("usage: %s enc\n",$0);
+	exit 1;
+}
+#printf("iP: %s\n", $ip);
+
+sub trim {
+	my ($str) = @_;
+#	printf("str: %s\n", $str);
+	return "" unless($str);
+	$str =~ s/^\s+//;
+	$str =~ s/\s+$//;
+#	printf("str: %s\n", $str);
+	return $str;
+}
+
+my $loc;
+if ($ip =~ m/:/) {
+	$loc="-k https://$ip/xmldata?item=All";
+} else {
+	$loc="http://$ip/xmldata?item=All";
+}
+my $cmd="timeout $TIMEOUT curl -n -s -S --connect-timeout 5 $loc 2>/dev/null | strings|";
+#printf("cmd: %s\n", $cmd);
+my $fh = IO::File->new($cmd);
+my $data = do { local $/ = <$fh> };
+$data = "" unless($data);
+printf("data: $data\n") if ($debug);
+$fh->close;
+#$data = "";
+printf("length: %d\n", length($data)) if ($debug);
+printf("has RIMP: %s\n", ($data =~ m/<RIMP>/ ? "yes" : "no")) if ($debug);
+if (length($data) < 1 || $data !~ m/<RIMP>/) {
+	printf("0,0.0\n");
+	exit(1);
+}
+
+my $config = XMLin($data, KeyAttr => [ ], forcearray => [ ]);
+unless($config) {
+	printf("error: unable to read iLO XML config!\n");
+	exit 1;
+}
+print Dumper($config) if ($debug);
+
+my $pn = $config->{MP}->{PN};
+$pn = "" unless($pn);
+my $fw = $config->{MP}->{FWRI};
+$fw = "0.0" unless($fw);
+chomp($fw);
+printf("pn: %s, fw: %s\n", $pn, $fw) if ($debug);
+
+my $i = index($pn,'(iLO ');
+$i = 0 unless($i);
+my $version = 0;
+if ($i > 0) {
+	my $str = substr($pn,$i+5);
+	$i = index($str,')');
+	$i = 0 unless($i);
+	$version = substr($str,0,$i) if ($i > 0); 
+}
+#my @vs = split('\.',$fw);
+#@vs = () unless(@vs);
+#$vs[0] = 0 unless($vs[0]);
+#$version = $vs[0] if ($version == 0 && $vs[0] > 0);
+printf("%s,%s\n",$version,$fw);
+
+exit 0;

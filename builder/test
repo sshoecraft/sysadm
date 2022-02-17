@@ -1,0 +1,14 @@
+#!/bin/bash
+exit 0
+test -z "$1" && exit 1
+if test -n "$2"; then
+	name=$2
+else
+	name=$1
+fi
+#echo $1 && exit 0
+vc=`whichvc $name`
+test `echo "$vc" | grep -c argument` -gt 0 && vc=usodpwpvc002
+./destroy_vm $name
+sleep 5
+sh -x ./builder -p nopatch $name DDC+DDC-UAT $1 $3

@@ -1,0 +1,37 @@
+#!/usr/bin/expect -f
+#exp_internal 1
+
+set server [lindex $argv 0]
+set pass [lindex $argv 1]
+set cmd [lindex $argv 2]
+
+if {$argc <2} { exit }
+
+#send_user "connecting to $server\n"
+set timeout 30
+spawn ssh $server
+sleep 2
+expect {
+	"(yes/no)? " {
+		send "yes\n"
+		sleep 1
+		exp_continue
+	}
+	"assword:" {
+		send "$pass\n"
+		expect {
+			"~ # " { }
+			":~] " { }
+			"~]$ " { }
+		}
+	}
+}
+set timeout 30
+send "$cmd\n"
+sleep 1
+expect {
+	"~ # " { }
+	":~] " { }
+	"~]$ " { }
+}
+exit 0

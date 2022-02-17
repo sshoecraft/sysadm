@@ -1,0 +1,66 @@
+#!/bin/bash
+strip_domain() {
+        echo $1 | awk '{
+                i=index($0,".");
+                if (i > 1)
+                        print substr($0,1,i-1)
+                else
+                        print $0;
+                endif
+        }'
+}
+get_domain() {
+        echo $1 | awk '{
+                i=index($0,".");
+                if (i > 1)
+                        print substr($0,i)
+                else
+                        print $0;
+                endif
+        }'
+}
+get_console() {
+#	echo "get_console: 1: $1"
+	n=`strip_domain $1`
+	if test -f /usr/local/etc/encinfo.dat; then
+		v=`cat /usr/local/etc/encinfo.dat | grep -i $n | awk -F, '{ print $5 }'`
+		if test -n "$v"; then
+			echo $v
+			exit 0
+		fi
+	fi
+	mydomain=`get_domain $1`
+	test "$mydomain" = "$1" && mydomain=""
+#	echo "mydomain: $mydomain"
+	found=0
+	for d in $mydomain .uson.usoncology.int .usoncology.com .dev.iknowmed.com .production.iknowmed.com .uprd.usoncology.unx .ulab.usoncology.unx
+	do
+		for s in -c -i -ilo ilo 
+		do
+			t=$n$s$d
+#			echo $t
+			v=`host $t`
+#			echo "$v"
+			if [ `echo $v | grep -c "not found"` -eq 0 ]; then
+				found=1
+				break
+			fi
+		done
+		test $found -eq 1 && break
+	done
+	test $found -eq 0 && v=""
+	echo $v | awk '{ print $NF }'
+}
+if test -n "$1"; then
+	h=`host $1`
+	if test `echo "$h" | grep -c "found"` -gt 0; then
+		cn="$1"
+	else
+		cn=`echo $h | awk '{ print $1 }'`
+	fi
+	# First, see if it's in encinfo
+	ip=`/usr/local/bin/pulldb --ip "$cn" | awk '{ print $2 }'`
+	test -z "$ip" && ip=`get_console "$cn"`
+	test -z "$ip" && ip=unknown
+	echo $ip | awk '{ print $1 }'
+fi

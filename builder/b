@@ -1,0 +1,9 @@
+#/usr/bin/perl
+use warnings;
+
+my $ip = "IP";
+A
+my $gw = "
+my $buf = "NETWORK";
+$buf =~ s/NETWORK/ip="$ip::$gw:$nm:$hostname:$interface:{off}"/;
+printf("%s\n", $buf);

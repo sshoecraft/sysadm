@@ -1,0 +1,49 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Sys::Virt;
+
+my $username = "sysadm";
+my $password = "blah";
+
+sub secreds {
+	my $creds = shift;
+
+	foreach my $cred (@{$creds}) {
+		if ($cred->{type} == Sys::Virt::CRED_AUTHNAME) {
+			$cred->{result} = $username;
+		}
+		if ($cred->{type} == Sys::Virt::CRED_PASSPHRASE) {
+			$cred->{result} = $password;
+		}
+	}
+	return 0;
+}
+
+#	auth => 1, credlist => [ Sys::Virt::CRED_AUTHNAME, Sys::Virt::CRED_PASSPHRASE, ], callback => setcreds ]);
+my $vmm = Sys::Virt->new(uri => "qemu:///system", auth => 1,
+	credlist => [ Sys::Virt::CRED_AUTHNAME, Sys::Virt::CRED_PASSPHRASE ], callback => sub {
+	my $creds = shift;
+
+	foreach my $cred (@{$creds}) {
+		if ($cred->{type} == Sys::Virt::CRED_AUTHNAME) {
+			printf("setting user...\n");
+			$cred->{result} = $username;
+		}
+		if ($cred->{type} == Sys::Virt::CRED_PASSPHRASE) {
+			printf("setting pass...\n");
+			$cred->{result} = $password;
+		}
+	}
+	return 0;
+});
+
+my @domains = $vmm->list_domains();
+
+foreach my $dom (@domains) {
+	print "Domain ", $dom->get_id, " ", $dom->get_name, "\n";
+}
+exit(0);
+#my $vm = 'win7';
+
+#$vm = $vmm->destroy();

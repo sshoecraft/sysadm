@@ -1,0 +1,11 @@
+#!/bin/bash
+
+. /usr/local/etc/.oacreds
+oareset="/usr/local/lib/tools/oareset.exp"
+test -f ./oareset.exp && oareset="./oareset.exp"
+#
+if test -z "$2"; then
+	echo "usage: resetbay <oa> <bay>"
+	exit 1
+fi
+$oareset $1 $OAUSER $OAPASS $2

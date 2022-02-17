@@ -1,0 +1,31 @@
+#!/bin/bash
+test -z "$1" && exit 1
+group=$(cat /etc/group | grep ^temproot:)
+if test -z "$group"; then
+	groupadd temproot
+	sed -i -e "/^temproot:/ s/$/$1/" /etc/group
+else
+	members=$(echo $group | awk -F: '{ print $4 }')
+	if test -n "$members"; then
+		let found=0
+		let i=1
+		while true
+		do
+			member=$(echo $members | awk -F, "{ print \$$i }")
+			test -z "$member" && break
+			if test "$member" = "$1"; then
+				let found=1
+				break
+			fi
+			let i=$i+1
+		done
+		if test $found -eq 0; then
+			sed -i -e "/^temproot:/ s/$/,$1/" /etc/group
+		fi
+	else
+		sed -i -e "/^temproot:/ s/$/$1/" /etc/group
+	fi
+fi
+if test $(cat /etc/sudoers | grep -c '^%temproot') -eq 0; then
+	echo "%temproot      ALL=(ALL)       ALL" >> /etc/sudoers
+fi

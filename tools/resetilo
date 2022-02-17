@@ -1,0 +1,8 @@
+#!/bin/bash
+test -z "$1" && exit 1
+tmp=$(mktemp -t svcXXXXXX)
+trap '{ rm -f $tmp; }' EXIT
+tools=/usr/local/lib/tools
+. /usr/local/etc/sysenv
+/usr/local/lib/tools/locfg.pl -s $1 -u $old_ilo_user -p $(echo "$old_ilo_pass" | base64 -d) -f $tools/resetilo.xml > $tmp
+test `cat $tmp | grep "MESSAGE=" | grep -c -v 'No error'` -gt 0 && cat $tmp | grep "MESSAGE=" | grep -v 'No error' | awk -F= '{ print $2 }' | sed "s:'::g"

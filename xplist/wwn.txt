@@ -1,0 +1,69 @@
+There is available WWN decoder tool for EMC but I am going to discuss how to decode manually?
+Each Symmetrix SAF port, RAF port, EF ficon port or DAF port (DMX only) has a unique worldwide name (WWN). The WWN is associated with the Tachyon chip on the director. It was intended to remain unique per director so that the director can be accessed on a storage area network. The Symmetrix SAF/RAF/DAF/EF WWN is dependent on the Symmetrix serial number, the director number, the processor letter, and the port on the processor. When the SAF/RAF/DAF is inserted into the Symmetrix, it discovers the Symmetrix serial number and slot number and the WWNs are set for the ports on the director.
+
+
+Symm 4/4.8/5 (2-port or 4-port) Fibre Channel front directors, the WWN breakdown are as follows: 
+The director WWN (50060482B82F9654) can be broken down (in binary) as follows: 
+
+First 28 Bits (from the left, bits 63-36, binary) of WWN are assigned by the IEEE (5006048, the vendor ID for EMC Symmetrix)
+
+5006048 2 B 8 2 F 9 6 5 4 
+0010 1011 1000 0010 1111 1001 0110 0101 0100
+
+0 A E 0 B E 5 9 -----------------------> AE0BE59 hex = 182500953 Symm S/N
+
+Bits 36 through 6 represent the Symmetrix serial number; the decode starts at bit 6 and works up to 36 to create the serial number. This is broken down as illustrated above.
+
+The least signifigant 6 bits (bits 5 through 0) can be decoded to obtain the Symmetrix director number, processor and port. Bit 5 is used to designate the port on the processor (0 for A, 1 for B). Bit 4, known as the side bit, is used to designate the processor (0 for A, 1 for B). The least signifigant 4 bits, 3 through 0, represent the Symm slot number. 
+
+01 0100 = 14 hex -----> director 5b port A
+
+In review, this WWN represents EMC Symmetrix serial number 182500953, director 5b port A
+
+For Symm DMX product family (DMX-1/2/3), the WWN breakdown are as follows: 
+The director WWN (5006048ACCC86A32) can be broken down (in binary) as follows:
+Again, like Symm 4/5, the first 28 bits (63-36) are assigned by the IEEE
+
+5006048 A C C C 8 6 A 3 2
+
+1010 1100 1100 1100 1000 0110 1010 0011 0010
+
+B 3 3 2 1 A 8 ----------------------> B3321A8 hex = 187900328 Symm S/N
+
+Bit 35 is now known as the 'Half' bit and is now used to decode which half the processor/port lie on the board.
+
+Bits 34 through 6 represent the serial number; the decode starts at bit 6 and works up to bit 34 to create the serial number. This is broken down as illustrated above.
+
+In conjunction with bit 35, the last 6 bits of the WWN represent the director number, processor and port. Bit 35, the 'Half' bit, represents either processor A and B, or C and D (0 for A and B, 1 for C and D). Bit 5 again represents the port on the processor (0 for A, 1 for B). Bit 4, the side bit, again represents the processor but with a slight change (if 0 then port A or C, if 1 then port B or D, depending on what the half bit is set to). The last 4 bits, 3 through 0, represent the Symm slot number.
+
+1 11 0010 -------> half bit = 1 (either processor C or D), port bit = 1 (port B), side bit = 1 (because half = 1, looking at C and D processors only, side = 1 now means processor D)
+0010 hex = 2 decimal (slot 2 or director 3)
+
+In review, the WWN of 5006048ACCC86A32 represents EMC Symmetrix serial number 187900328, director 3d port B
+
+------------------------------------------------------------------------------------------------------
+
+Let assume you have multiple arrays hooked up in you datacentre but are not really sure what is connected to were.
+
+So you log into a switch, type some brocade/cisco/qlogic/other command to get an overview of connected devices and you have no idea which array-port is located on which switch port. One thing you can see is the WWN.
+
+All vendors (that I know of) use some form of coding mechanism to include array information in their WWNs do if you know what to look for you can check which array and which port is connected to that particular switch port.
+
+Hitachi uses the following:
+
+Lets say you see an array port logged in with WWN 50:06:0e:80:05:27:72:10. You first have to dissect the WWN into chunks. The first 4 digits are IEEE registered.
+
+5006 0e80 is IEEE registered to Hitachi and raid systems division
+05 is the model number code for USP-V / USP-VM (USP-V in this case)
+2772 is hex encoded for the serial number. in this case 10098
+10 is the port number on the array. 
+
+The last one is a bit tricky since now you need a mapping table to convert this to a portlabel that shows up in storage navigator. In this example it's CL2-A.
+
+One other example:
+50:06:0e:80:05:61:c0:10
+
+5005 0e80 = fixed
+05 = USP-V or USP-VM (in this case its a USP-VM)
+61C0 = serial 25024
+10 = port id also CL2-A

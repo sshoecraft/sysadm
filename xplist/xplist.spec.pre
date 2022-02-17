@@ -1,0 +1,11 @@
+Summary: list SAN devices
+Name: xplist
+Version: <VERSION>
+Release: <RELEASE>
+License: Stephen Shoecraft
+Group: Applications/System
+BuildArch: x86_64
+
+%description
+A utility to list SAN devices and useful information about them
+

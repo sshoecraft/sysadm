@@ -1,0 +1,78 @@
+#!/usr/bin/expect -f
+exp_internal 0
+
+proc check {pass} {
+	expect {
+		"assword:" {
+			send "$pass\n"
+			sleep 2
+			expect {
+				"> " {
+					return 0
+				}
+			}
+		}
+	}
+	# timed out
+	return 1
+}
+
+# Get the args
+set server [lindex $argv 0]
+set user "$OAUSER"
+set pass "$OAPASS"
+set bay [lindex $argv 1]
+if { $bay == "" }  {
+  puts "usage: <server> <bay>\n"
+  exit 1
+}
+
+# Login 
+set timeout 30
+spawn ssh -F /dev/null -o UserKnownHostsFile=/dev/null -o ConnectTimeout=5 -o PreferredAuthentications=password -o StrictHostKeyChecking=no -o BatchMode=no $user@$server
+set status [check $pass]
+if { $status != 0 } {
+	send_user "\nLogin failed\n"
+	exit 1
+}
+
+# Connect to Bay X
+#send "\r"
+#expect  "> " {
+#	send "set script mode on\n"
+#}
+
+#expect "\\\[SCRIPT MODE]> " {
+puts "sending return\n"
+send "\n"
+set timeout 5
+expect ">" {
+	send "connect server $bay\n"
+	sleep 10
+}
+
+set timeout 300
+expect "\\-> " {
+	send "cd /map1/accounts1\n\r"
+	sleep 2
+}
+expect "\\-> " {
+	send "create username=ilouser password=ByeKurt! name=ilouser group=admin,config,oemhp_vm,oemhp_rc,oemhp_power\n\r"
+	sleep 2
+}
+expect "\\-> " {
+	send "add user ilouser ByeKurt!\n\r"
+	sleep 2
+}
+expect "\\-> " {
+	send "set user access ilouser administrator\n\r"
+	sleep 2
+}
+
+# Tidy up
+set timeout 5
+expect "> " {
+	send "exit\n"
+	sleep 1
+	exp_continue
+}

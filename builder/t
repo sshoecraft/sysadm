@@ -1,0 +1,9 @@
+while read n i
+do
+	c=`echo $n | awk '{ print substr($0,1,1) }'`
+	test "$c" = "#" && continue
+	s=`echo $n | awk -F. '{ print $1 }'`
+	./builder -i $i $n DDC+DDC-UAT $s
+#	admssh $i "yum clean all; yum -y update"
+	test $? -ne 0 && exit 1
+done < l

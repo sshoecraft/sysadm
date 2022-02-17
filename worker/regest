@@ -1,0 +1,8 @@
+for f in *
+do
+	test -d $f && continue
+	test "$f" = "tmpin" && continue
+	echo "**************"
+	echo ">> $f"
+	./test $f
+done

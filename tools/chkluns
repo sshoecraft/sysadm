@@ -1,0 +1,81 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use DBI;
+use XML::LibXML;
+
+my $debug = 0;
+
+my $home = $ENV{ HOME };
+sub dprintf { my $level = shift; printf(@_) if ($debug >= $level); }
+
+#my $tmpfile = mktemp("/tmp/aaXXXXXX");
+my $tmpfile = "/tmp/chkluns.tmp";
+my $parser = XML::LibXML->new();
+
+my $argc = $#ARGV + 1;
+dprintf(1,"argc: %d\n", $argc);
+if ($argc < 1) {
+	printf("usage: $0 <farm>\n");
+	exit 1;
+}
+my ($farm,$san);
+$san = 0;
+if ($argc > 1) {
+	if ($ARGV[0] eq '-x') {
+		$san = 1;
+	}
+	$farm = $ARGV[1];
+} else {
+	$farm = $ARGV[0];
+}
+dprintf(1,"farm: %s, san: %d\n", $farm, $san);
+
+my @hosts = `farminfo -x $farm`;
+dprintf(1,"hosts: %s", @hosts);
+if ($hosts[0] =~ m/not found/) {
+	printf("%s",@hosts);
+	exit 1;
+}
+
+my ($cmd,$count);
+foreach (@hosts) {
+	chomp($_);
+	my $host = $_;
+	dprintf(1,"host: %s\n", $host);
+	if ($san == 0) {
+		$count = `esxconf -s $host config.storageDevice.scsiLun | grep uuid | wc -l`;
+		printf("%s: %d\n", $host, $count);
+		next;
+	}
+	$cmd = sprintf("esxconf -x -s %s config.storageDevice.scsiLun > %s", $host, $tmpfile);
+	dprintf(1,"cmd: %s\n", $cmd);
+	system($cmd);
+
+	my $doc = $parser->parse_file($tmpfile);
+
+	$count = 0;
+	foreach my $luns ($doc->findnodes('/config/storageDevice/scsiLun/ScsiLun')) {
+
+		# Get type
+		my ($typeV) = $luns->findnodes('./lunType');
+		next unless ($typeV);
+		my $type = $typeV->to_literal;
+
+		# Skip controllers
+		next if ($type =~ m/storageArrayController/);
+
+		# Get model
+		my ($modelV) = $luns->findnodes('./model');
+		next unless ($modelV);
+		my $model = $modelV->to_literal;
+
+		# Only want XP and EVA disks
+		if ($model =~ /OPEN/ || $model =~ /HSV/) {
+			dprintf(2,"type: %s, model: %s\n", $type, $model);
+			$count++;
+		}
+	}
+
+	printf("%s: %d\n", $host, $count);
+}

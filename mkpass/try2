@@ -1,0 +1,4 @@
+while read n
+do
+	./hostinfo $n
+done < l

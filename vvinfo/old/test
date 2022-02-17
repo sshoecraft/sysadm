@@ -1,0 +1,9 @@
+#!/bin/bash
+test -z "$1" && exit 1
+KEY="-i $HOME/etc/sysadm"
+USER="sysadm@"
+ROOT="sudo su root -c"
+ssh -n -q -o BatchMode=yes $KEY "$USER"$1 "$ROOT \"rm -f /tmp/vvinfo\""
+scp -B -o ConnectTimeout=10 $KEY vvinfo "$USER"$1:/tmp > /dev/null 2>&1
+test $? -ne 0 && exit 1
+ssh -n -q -o BatchMode=yes $KEY "$USER"$1 "$ROOT \"chmod 755 /tmp/vvinfo; /tmp/vvinfo $2; rm -f /tmp/vvinfo\""

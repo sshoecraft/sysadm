@@ -1,0 +1,8 @@
+<RIBCL VERSION="2.0">
+   <LOGIN USER_LOGIN="adminname" PASSWORD="password">
+      <RIB_INFO MODE="write">
+         <TPM_ENABLED VALUE="Yes"/>
+         <UPDATE_RIB_FIRMWARE IMAGE_LOCATION="+++IMAGE+++"/>
+      </RIB_INFO>
+   </LOGIN>
+</RIBCL>

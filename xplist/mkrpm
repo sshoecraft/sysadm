@@ -1,0 +1,15 @@
+#!/bin/bash
+./doinst localhost
+v=`cat version.h | awk '{ print $3 }'`
+eval ver=$v
+rel=`cat release`
+make install BUILDROOT=$HOME/rpmbuild/BUILDROOT/xplist-$ver-$rel.`uname -m`
+cat xplist.spec.pre | sed "s:<VERSION>:$ver:" | sed "s:<RELEASE>:$rel:" > xplist.spec
+cat changelog >> xplist.spec
+rpmbuild -bb xplist.spec
+if [ $? -ne 0 ]; then
+	exit 1
+fi
+rm -f xplist.spec
+let rel=$rel+1
+echo $rel > release

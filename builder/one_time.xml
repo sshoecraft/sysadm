@@ -1,0 +1,7 @@
+<RIBCL VERSION="2.0">
+	<LOGIN USER_LOGIN="adminname" PASSWORD="password">
+		<SERVER_INFO MODE="write">
+			<SET_ONE_TIME_BOOT value = "CDROM"/>
+		</SERVER_INFO>
+	</LOGIN>
+</RIBCL>

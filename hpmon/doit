@@ -1,0 +1,5 @@
+#!/bin/bash
+rm -f ~/etc/hpmon/*
+rm -f ~/tmp/hpmon/*
+worker hpsim1 128 ./dohpmon
+worker hpsim2 128 ./dohpmon

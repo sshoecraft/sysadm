@@ -1,0 +1,7 @@
+#
+# $Id$
+
+NAME=	genpc
+SRCS=	main.c gen.c writeinc.c writepc.c misc.c oracle.c
+
+.include "../../bin.mk"

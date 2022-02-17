@@ -1,0 +1,36 @@
+Disk 01              b6e1a5001000000     3815GB             00:00    P2000 G3 FC 00000000
+Disk 02              *DDC_ClusterB_File12 2047GB             00:01    HSV300     00000000
+Disk 03              *DDC_ClusterB_File13 1300GB             00:02    HSV300     00000000
+Disk 04              003600001a40000     1300GB             00:03    HSV300     00000000
+Disk 05              0036000014d0000     1950GB             00:04    HSV300     00000000
+Disk 06              003600001530000     2047GB             00:05    HSV300     00000000
+Disk 07              003600001500000     1300GB             00:06    HSV300     00000000
+Disk 08              003600001a00000     100GB              00:07    HSV300     00000000
+Disk 09              003600002010000     1024GB             00:08    HSV300     00000000
+Disk 10              DDC-SRV-002-SAN3    2347GB             00:09    VV         00000000
+Disk 11              DDC-SERVERS2-SAN1   8192GB             00:0a    VV         00000000
+Disk 12              DDC-SERVERS2-SAN2   8192GB             00:0b    VV         00000000
+Disk 13              DDC-SERVERS2-SAN3   8192GB             00:0c    VV         00000000
+Disk 14              000006100008715     2048GB             00:0d    VV         00000000
+Disk 15              DDC-SERVERS2-VFS1   4096GB             00:0e    VV         00000000
+Disk 16              DDC-SERVERS-SAN2    8192GB             00:0f    VV         00000000
+Disk 17              *DDC_ClusterB_File09 1300GB             00:10    HSV300     00000000
+Disk 18              *DDC_ClusterB_File10 1300GB             00:11    HSV300     00000000
+Disk 19              003600000080000     1300GB             00:12    HSV300     00000000
+Disk 20              *DDC_ClusterB_File16 1999GB             00:13    HSV300     00000000
+Disk 21              *DDC_ClusterB_File17 2047GB             00:14    HSV300     00000000
+Disk 22              *DDC_ClusterB_File02 2500GB             00:15    HSV300     00000000
+Disk 23              *DDC_ClusterB_File05 1200GB             00:16    HSV300     00000000
+Disk 24              *DDC_ClusterB_File07_01 1770GB             00:17    P2000 G3 FC 00000000
+Disk 25              *DDC_ClusterB_File07_02 373GB              00:18    P2000 G3 FC 00000000
+Disk 26              *DDC_ClusterB_File08_02 745GB              00:19    P2000 G3 FC 00000000
+Disk 27              *DDC_ClusterB_File11 1304GB             00:1a    P2000 G3 FC 00000000
+Disk 28              b5c9a4f01000000     2095GB             00:1b    P2000 G3 FC 00000000
+Disk 29              b98c95001000000     419GB              00:1c    P2000 G3 FC 00000000
+Disk 30              DDC_ClusterB_vsan5  650GB       CL4A   02:0a    OPEN-V     00065440
+Disk 31              000ffa00000020d      25GB       CL4A   02:0d    OPEN-V     00065440
+Disk 32              000ffa000000217     650GB       CL3A   02:17    OPEN-V     00065440
+Disk 33              000ffa00000021b     650GB       CL3A   02:1b    OPEN-V     00065440
+Disk 34              000ffa0000002f0     250GB       CL3A   02:f0    OPEN-V     00065440
+Disk 35              000ffa0000002f1     250GB       CL3A   02:f1    OPEN-V     00065440
+Disk 36              000ffa0000002f2     250GB       CL3A   02:f2    OPEN-V     00065440

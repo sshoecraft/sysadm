@@ -1,0 +1,100 @@
+﻿<!DOCTYPE HTML>
+<html style="height:99%;">
+<head>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="copyright" content="Copyright © 2006-2011 Hewlett-Packard Development Company, L.P." />
+	<title>iLO 3</title>
+
+	<!--[if lte IE 6]><script type="text/javascript" src="js/supersleight-min.js"></script><![endif]-->
+	<link href="favicon.ico" rel="shortcut icon" />
+	<link href="css/jquery-ui.css" rel="stylesheet" type="text/css" media="all" />
+	<link href="css/eov.css" rel="stylesheet" type="text/css" media="all" />
+	<!--[if lte IE 9]><link href="css/eov_lteIE9.css" rel="stylesheet" type="text/css" media="all" /><![endif]-->
+	<script type="text/javascript" src="js/json2.js"></script>
+	<script src="js/jquery-1.4.2.js" type="text/javascript"></script>
+	<script src="js/iLO.js" type="text/javascript"></script>
+
+	<script type="text/javascript">
+		var baseURL = window.location.href;
+		baseURL = baseURL.substring(0,baseURL.lastIndexOf("/")+1);
+
+		/* force redraw from the top (mozilla quirk fix) */
+		var sessionUrl = jQuery.cookies.get('sessionUrl'); // null if undefined
+		if (sessionUrl && sessionUrl != "" && sessionUrl == location.href) {
+			jQuery.cookies.set("sessionUrl", "");
+			location.replace(location.href);
+		} else {
+			jQuery.cookies.set("sessionUrl", escape(location.href));
+		}
+		sessionUrl = jQuery.cookies.get('sessionUrl');
+
+		function doLogout(message, timeout) {
+			var jsonObj = { method: "logout" };
+			iLO.sendJsonRequest("logout","POST","json/login_session",jsonObj,function (o,fname,error) {
+				iLOGlobal.init();
+				iLO.setCookie("sessionKey",null);
+				iLOGlobal.isApplication = true;
+				iLOGlobal.logout_message = jQuery.isPlainObject(message) ? message : null;
+				iLOGlobal.login_delay = jQuery.existsNonNull(timeout) ? timeout : 0;
+				showLogin();
+			});
+		}
+
+		function showLogin(arg) {
+			var fresh = (jQuery.isValidString(arg) && arg=="fresh") ? true : false;
+			var modalFrame = frames["modalFrame"];
+			document.body.rows = "*,0,0";
+			if(fresh || !modalFrame.location.href.match("html/login.html"))
+				modalFrame.location.replace(baseURL + 'html/login.html');
+			else
+				try { modalFrame.updatePage(); } 
+				catch(e) { 
+					//modalFrame isn't ready?
+				}
+			frames["appFrame"].location.replace(baseURL + 'html/blank.html');
+			/* applet is independent and uses a different timeout mechanism */
+			//frames["appletFrame"].location.replace(baseURL + 'html/blank.html');
+		}
+	
+		function showApplication() {
+			document.body.rows = "0,*,0";
+			frames["appFrame"].location.replace(baseURL + 'html/application.html');
+			//frames["modalFrame"].location.replace(baseURL + 'html/blank.html');
+			/* applet is independent and uses a different timeout mechanism */
+			//frames["appletFrame"].location.replace(baseURL + 'html/blank.html');
+		}
+
+		function clearApplet() {
+			try { frames["appletFrame"].location.replace(baseURL + 'html/blank.html'); } 
+			catch(e) { /* appletFrame isn't ready? */ }
+		}
+
+		$(document).ready(function() {
+			jQuery.favicon('images/favico.png');
+			var isConnected = iLO.init({ "isApplication": true });
+			if (iLO.getCookie("sessionKey") && iLOGlobal.cache["session_key"]) {
+				showApplication();
+			} else {
+				showLogin("fresh");
+			}
+			// clear the applet frame
+            clearApplet();
+		});
+	</script>
+</head>
+<noscript>
+	<div class='signInWarning' style='display: block'>
+		<br />
+		You must have JavaScript enabled in your browser.
+	</div>
+</noscript>
+<frameset rows="*,0,0" border="0" framespacing="0" frameborder="0">
+	<frame name="modalFrame" id="modalFrame" frameborder="no" scrolling="auto" noresize />
+	<frame name="appFrame" id="appFrame" frameborder="no" scrolling="no" noresize />
+	<frame name="appletFrame" id="appletFrame" frameborder="no" scrolling="no" noresize />
+	<noframes>
+	Sorry, your browser does not handle frames!
+	</noframes>
+</frameset>
+</html>

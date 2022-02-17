@@ -1,0 +1,29 @@
+#!/bin/bash
+. /usr/local/etc/.oacreds
+exp=/usr/local/lib/tools/listoa.exp
+if test "$1" = "-n"; then
+	exp=/usr/local/lib/tools/oanames.exp
+	shift
+fi
+if test -z "$1"; then
+	echo "usage: $0 <ci>"
+	exit 1
+fi
+do_callsub() {
+tmp=/tmp/listoa.$$
+/usr/local/bin/callsub -enc $1 > $tmp 2>/dev/null
+while read line
+do
+#	echo $line
+	if test `echo $line | grep -c Error` -gt 0; then
+		echo $line
+		exit 1
+	fi
+	test `echo $line | grep -c ^Enclosure:` -gt 0 && enc=`echo $line | awk -F': ' '{ print $2 }'`
+	test `echo $line | grep -c "^OA IP:"` -gt 0 && ip=`echo $line | awk -F': ' '{ print $2 }'`
+done < $tmp
+rm -f $tmp
+num=`echo $enc | awk '{ print substr($0,length($0)-3) }'`
+}
+$exp $1 $OAUSER $OAPASS
+exit 0

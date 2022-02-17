@@ -1,0 +1,67 @@
+#!/bin/bash
+test -z "$1" && exit 1
+
+testing=0
+
+OPTS=""
+while test $# -gt 1
+do
+	OPTS="$OPTS $1"
+	shift
+done
+
+if test $(echo $0 | grep -c ^./) -gt 0; then
+SRC=./luninfo
+else
+SRC=/usr/local/bin/luninfo
+fi
+if test $testing -eq 0; then
+	tmp=$(mktemp -t luninfo-XXXXXX)
+	trap '{ rm -f $tmp; }' EXIT
+else
+	tmp=/tmp/luninfo.dat
+fi
+/usr/local/bin/timeout 2 /usr/local/bin/esxconf -a -s "$1" > /dev/null 2>&1
+if test $? -eq 0; then
+	/usr/local/bin/esxshell start $1
+#	/usr/local/lib/tools/esxcmd $1 "rm -f /tmp/luninfo"
+        if test $testing -eq 0; then
+		/usr/local/lib/tools/esxscp $SRC $1:/tmp > $tmp 2>&1
+		if test $? -ne 0; then
+			cat $tmp
+			exit 1
+		fi
+		/usr/local/lib/tools/esxcmd $1 "/tmp/luninfo $OPTS" > $tmp 2>&1
+		if test $? -ne 0; then
+			cat $tmp
+			exit 1
+		fi
+	fi
+	start=0
+	while read -r
+	do
+		line="$REPLY"
+		if test $start -eq 1; then
+			echo "$line"
+		else
+			if test $(echo "$line" | grep -c Vendor) -gt 0; then
+				echo "$line"
+				start=1
+			elif test $(echo "$line" | grep -c /tmp/luninfo) -gt 0; then
+				start=1
+			fi
+		fi
+	done < $tmp
+#	rm -f $tmp
+#	/usr/local/bin/esxshell stop $1
+else
+	/usr/local/bin/timeout 30 /usr/local/lib/tools/admssh $1 "sudo bash -c \"rm -f /tmp/luninfo; cat /etc/release 2>/dev/null\"" > $tmp
+	if test "$(cat $tmp | grep -c Solaris)" = "1"; then
+		SRC=/usr/local/lib/tools/luninfo_solaris
+		OPTS="-o"
+	fi
+	rm -f $tmp
+	/usr/local/lib/tools/admscp $SRC $1:/tmp/luninfo > /dev/null 2>&1
+	test $? -ne 0 && exit 1
+	/usr/local/lib/tools/admssh $1 "sudo bash -c \"chmod 755 /tmp/luninfo; /tmp/luninfo $OPTS\""
+fi

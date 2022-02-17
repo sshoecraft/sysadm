@@ -1,0 +1,8 @@
+#!/bin/sh
+if [ "$1" = "" ]; then
+	echo "usage: getmc <host>"
+	exit 1
+fi
+/usr/local/lib/tools/admscp /usr/local/lib/tools/memconf $1:/tmp/memconf > /dev/null 2>&1
+test $? -ne 0 && exit 1
+/usr/local/lib/tools/admssh $1 "sudo su - root -c \"chmod +x /tmp/memconf; /tmp/memconf; rm -f /tmp/memconf\"" 2>/dev/null

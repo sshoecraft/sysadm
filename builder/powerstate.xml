@@ -1,0 +1,7 @@
+<RIBCL VERSION="2.0">
+	<LOGIN USER_LOGIN="adminname" PASSWORD="password">
+		<SERVER_INFO MODE="read">
+			<GET_HOST_POWER_STATUS/>
+		</SERVER_INFO>
+	</LOGIN>
+</RIBCL>

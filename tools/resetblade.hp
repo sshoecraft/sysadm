@@ -1,0 +1,50 @@
+#!/bin/bash
+#
+tmp=/tmp/resetblade.$$
+oalist="/usr/local/lib/tools/oalist.exp"
+test -f ./oalist.exp && oalist="./oalist.exp"
+oareset="/usr/local/lib/tools/oareset.exp"
+test -f ./oareset.exp && oareset="./oareset.exp"
+#
+if test -z "$1"; then
+	echo "usage: resetblade <hostname>"
+	exit 1
+fi
+arg=`echo $1 | tr "[:upper:]" "[:lower:]"`
+h=`host $arg | head -1 | awk '{ print $1 }'`
+if test `echo $h | grep -c Host` -gt 0; then
+	echo "error: unable to find $1 in dns"
+	exit 1
+fi
+val=`getcons $h | awk '{ print $1 }'`
+if test "$val" = "unknown"; then
+	echo "error: unable to find console for $1"
+	exit 1
+fi
+cons=`echo $val | awk -F. '{ print $1 }'`
+echo "Console: $cons"
+sname=`echo $h | awk -F. '{ print $1 }'`
+#oa=`/usr/local/bin/whichoa $sname | grep -e 'oa: ' | awk -F'oa: ' '{ print $2 }' | awk '{ print $1 }'`
+enc=`/usr/local/bin/callsub -enc $sname | grep 'Enclosure:' | awk '-F: ' '{ print $2 }'`
+oa="$enc"oa
+if test -z "$oa"; then
+	echo "error: not a blade or unable to find oa"
+	exit 1
+fi
+echo "OA: $oa"
+num=`echo $oa | awk -Foa '{ print substr($1,length($1)-3) }'`
+#echo $num
+pass="OA@$num"
+echo "pass: $pass"
+$oalist $oa ADMIN $pass | tee $tmp
+#  2 g2t0306h-c                    16.238.133.128  OK       On      Off
+while read bay ilo ip status power uid part rest
+do
+	test -z "$bay" && continue
+	if test "$ilo" = "$cons"; then
+#		echo "bay: $bay"
+		$oareset $oa ADMIN $pass $bay
+		break
+	fi
+done < $tmp
+rm -f $tmp

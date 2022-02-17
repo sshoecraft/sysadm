@@ -1,0 +1,43 @@
+#!/bin/bash
+test -z "$1" && exit 1
+
+tmp=/tmp/detect_drac_$$.tmp
+
+. /usr/local/etc/.builder
+
+while true
+do
+	case "$1" in
+	"-u")
+		shift
+		dracuser="$1"
+		shift
+		;;
+	"-p")
+		shift
+		dracpass=$(echo "$1" | base64)
+		shift
+		;;
+	*)
+		break;;
+	esac
+done
+dracip=$1
+		
+RAC=/opt/dell/srvadmin/bin/idracadm7
+DORAC="$RAC -r $dracip -u $dracuser -p $(echo $dracpass | base64 -d)"
+
+$DORAC get idrac.info > $tmp 2>&1
+status=$?
+#echo "status: $status"
+if test $status -ne 0; then
+	echo "0,0.00"
+	exit 1
+fi
+t=`cat $tmp | grep '^#Version=' | awk -F= '{ print $2 }'`
+maj=`echo $t | awk -F. '{ print $1 }'`
+min=`echo $t | awk -F. '{ print $2 }'`
+ver="$maj,$maj.$min"
+echo "$ver"
+rm -f $tmp
+exit 0

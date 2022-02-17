@@ -1,0 +1,13 @@
+#!/bin/bash
+while read name os
+do
+	test $(echo "$name" | grep -c '^#') -gt 0 && continue
+	echo $name $os
+	host $name
+	/usr/local/lib/tools/destroy_vm $name
+	builder $name DDC+DDC-UAT $os
+#	./test $os
+#	admssh $os "uptime"
+#	admssh $os "sudo su - root -c \"yum clean all; yum -y install centrify; yum -y update centrify\""
+#	admssh $os "sudo su - root -c \"yum clean all; yum -y update uson-altiris-config\""
+done < test_all.dat

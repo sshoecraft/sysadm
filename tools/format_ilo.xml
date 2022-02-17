@@ -1,0 +1,7 @@
+<RIBCL VERSION="2.0">
+ <LOGIN USER_LOGIN="Administrator" PASSWORD="">
+ <RIB_INFO MODE="write"> 
+ <FORCE_FORMAT VALUE="all" /> 
+ </RIB_INFO> 
+ </LOGIN> 
+</RIBCL>
