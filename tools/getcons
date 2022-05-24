@@ -1,4 +1,5 @@
 #!/bin/bash
+DOMAINS=localdomain.net
 strip_domain() {
         echo $1 | awk '{
                 i=index($0,".");
@@ -13,7 +14,7 @@ get_domain() {
         echo $1 | awk '{
                 i=index($0,".");
                 if (i > 1)
-                        print substr($0,i)
+                        print substr($0,i+1)
                 else
                         print $0;
                 endif
@@ -33,11 +34,11 @@ get_console() {
 	test "$mydomain" = "$1" && mydomain=""
 #	echo "mydomain: $mydomain"
 	found=0
-	for d in $mydomain .uson.usoncology.int .usoncology.com .dev.iknowmed.com .production.iknowmed.com .uprd.usoncology.unx .ulab.usoncology.unx
+	for d in $mydomain $DOMAINS
 	do
 		for s in -c -i -ilo ilo 
 		do
-			t=$n$s$d
+			t=${n}${s}.${d}
 #			echo $t
 			v=`host $t`
 #			echo "$v"

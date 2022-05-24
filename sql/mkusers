@@ -3,7 +3,7 @@ ROOTPASS=
 db=`cat ~/.my.cnf | grep ^database= | awk -F= '{ print $2 }'`
 user=`cat ~/.my.cnf | grep ^user= | awk -F= '{ print $2 }'`
 pass=`cat ~/.my.cnf | grep ^password= | awk -F= '{ print $2 }'`
-rw_pass="9m7bqju19x"
+rw_pass="youshallnot"
 for w in '%' localhost
 do
 	mysql --database=mysql --user=root --password=$RPASS -e "drop user '$db"_"ro'@'$w'" > /dev/null 2>&1
