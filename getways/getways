@@ -1,8 +1,0 @@
-#!/bin/bash
-cat << EOF
-ddc-coe
-ndh-coe
-lwv-coe
-dmz-coe
-usow-coe
-EOF
