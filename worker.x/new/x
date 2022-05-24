@@ -1,5 +1,0 @@
-#/usr/bin/perl
-$line=" Net_Test            0        1           vmnic13,vmnic2,vmnic3,vmnic6,vmnic7,vmnic10,vmnic11,vmnic12";
-#if ($line =~ /^\s+(.+\w)\s*(\w+)\s+(\d+)\s+(\d+)\s+([\w,]*)/) {
-$line =~ /^\s+(\w+)\s+(\d+)\s+(\d+)/;
-printf("1: %s, 2: %s, 3: %s, 4: %s, 5: %s\n", $1, $2, %3, $4, $5);

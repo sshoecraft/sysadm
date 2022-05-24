@@ -1,6 +1,0 @@
-let i=1
-while test $i -le 40
-do
-	echo $i
-	let i=$i+1
-done

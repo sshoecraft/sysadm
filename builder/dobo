@@ -1,5 +1,4 @@
-ilo=10.5.221.240
-#ilo=10.123.128.198
+ilo=192.168.1.45
 /usr/local/lib/tools/locfg.pl -s $ilo -u ilouser -p "ByeKurt!" -f Get_Persistent_Boot_Order.xml > x
 dos2unix x
 #exit 0

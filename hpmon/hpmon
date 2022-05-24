@@ -36,7 +36,6 @@ sub END {
 }
 
 my $ilo = $ARGV[0];
-#$ilo = "10.184.240.27";
 exit 0 unless($ilo);
 dprintf(1,"ilo: %s\n", $ilo);
 

@@ -1,0 +1,4 @@
+#!/bin/bash
+# Put your waypoints before the EOF
+cat << EOF
+EOF

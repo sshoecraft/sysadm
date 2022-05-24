@@ -1,6 +1,0 @@
-#!/bin/bash
-scp -B -o ConnectTimeout=5 $1 $2:/tmp > /dev/null
-if [ $? -ne 0 ]; then
-	exit 1
-fi
-/usr/local/lib/tools/admssh $2 "sudo su - root -c \"mkdir -p /usr/local/bin; mv /tmp/$1 /usr/local/bin; chown root:root /usr/local/bin/$1; chmod 755 /usr/local/bin/$1\""

@@ -276,7 +276,7 @@ if test $found -eq 1; then
 	ns=$pv_ns
 fi
 IFS="$OIFS"
-test -z "$ns" && ns=10.5.205.11
+test -z "$ns" && ns=192.168.1.1
 
 if test $(echo $ip | grep -ic 'dhcp') -eq 0; then
 	# For VM builds
