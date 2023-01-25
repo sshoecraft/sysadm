@@ -299,30 +299,29 @@ ALLOCATION LENGTH
 11 CONTROL
 */
 
-#define REPORT_LUNS_LENGTH 32
 int get_lunid(filehandle_t fd, int *lunid) {
-	unsigned char data[256], *p;
-	unsigned char cmd[] = { 0xa0, 0, 0, 0, 0, 0, REPORT_LUNS_LENGTH, 0, 0, 0, 0, 0 };
+	unsigned char data[256];
+	unsigned char *p;
+	unsigned char cmd[12];
+	unsigned long len = ntohl(256);
 	int i,count;
 
+	memset(&cmd,0,sizeof(cmd));
+	cmd[0] = 0xa0;
+	memcpy(&cmd[6],&len,4);
+//	bindump("report luns cmd",&cmd,12);
 	if (do_ioctl(fd, cmd, 10, data, sizeof(data))) {
 		dprintf("get_lunid: do_ioctl failed!\n");
 		return 1;
 	}
-//	bindump("report luns data",&data,REPORT_LUNS_LENGTH);
+//	bindump("report luns data",&data,32);
 	p = data;
 	count = _getlong(p);
+	dprintf("count: %d\n", count);
+	if (count > 248) count = 248;
 //	bindump("report luns data",p,count+8);
 	count /= 8;
 	dprintf("count: %d\n", count);
-#if 0
-0000: 00 00 00 58 00 00 00 00 00 00 00 00 00 00 00 00   ...X............
-0010: 00 01 00 00 00 00 00 00 00 02 00 00 00 00 00 00   ................
-0020: 00 03 00 00 00 00 00 00 00 04 00 00 00 00 00 00   ................
-0030: 00 05 00 00 00 00 00 00 00 06 00 00 00 00 00 00   ................
-0040: 00 07 00 00 00 00 00 00 00 08 00 00 00 00 00 00   ................
-0050: 00 09 00 00 00 00 00 00 00 0A 00 00 00 00 00 00   ................
-#endif
 	for(i=0; i < count; i++) {
 		p += 8;
 		*lunid = scsilun_to_int((struct scsi_lun *)p);

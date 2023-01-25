@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 tmp=/tmp/htmailme.$$
-DEF="stephen.shoecraft@mckesson.com"
+DEF="sshoecraft@earthlink.net"
 #
 #echo "0: $0, 1: $1, 2: $2, 3: $3"
 if test $# -lt 1; then

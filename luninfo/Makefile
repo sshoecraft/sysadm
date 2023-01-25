@@ -1,5 +1,5 @@
 
-DEBUG=yes
+DEBUG=no
 #UTIL=yes
 #STATIC=yes
 #OS=win
