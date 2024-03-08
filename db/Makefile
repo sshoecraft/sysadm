@@ -1,5 +1,5 @@
 
-#DEBUG=yes
+DEBUG=yes
 
 include ../Makefile.inc
 

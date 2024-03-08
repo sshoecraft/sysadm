@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BUILDER_VERSION=2.10
+BUILDER_VERSION=2.22
 # 1.00 init
 # 1.01 added resolver for ilo
 # 1.02 added -p <profile> option
@@ -18,17 +18,27 @@ BUILDER_VERSION=2.10
 # 2.09 10/20/20 display console ip and ver, allow diff NS in pv.dat
 # 2.10 10/28/20 if bcast -1 does not ping, try 1 else fail
 # 2.11 11/15/20 dont ping computed gw, fixup dell build
+# 2.12 -g (mygw) was being ignored, forgw gw=mygw if not empty
+# 2.13 add -f flag to force reboot on dell vrtx
+# 2.14 add -U flag to provide user url (iso)
+# 2.15 call getwiniso to get a windows image
+# 2.16 update builder_pv to use subnets and add in_subnet func
+# 2.17 add -m <netmask> option
+# 2.18 ?? where'd this go
+# 2.19 disable integraded SD cards on dell
+# 2.20 2023-02-03 fix subnet code
+# 2.21 2023-08-31 fix drac boot order settings
+# 2.22 2023-09-12 disable 2nd embedded NIC and TPM on Dell
 
-usenew=0
-
-# Source builder creds
-. /usr/local/etc/.builder
+. /usr/local/etc/sysenv
 
 vm_def_cpu=1
 vm_def_mem=2
 vm_def_lin_hd=20
 vm_def_win_hd=80
-dell_mount_type=nfs
+#dell_mount_type=nfs
+#dell_mount_type=http
+dell_mount_type=cifs
 
 usage() {
 	echo "usage: $0 [-ivpgo ] <server name> <ilo> <os profile> [vlan]"
@@ -43,8 +53,10 @@ usage() {
 	echo "     -c <ip>            specify console IP"
 	echo "     -u <username>      override ilo/drac username"
 	echo "     -s <username>      override ilo/drac password"
+	echo "     -E                 enable efi"
 	echo "     -o                 display list of supported OSes"
 	echo "     -l                 display long list of supported OSes"
+	echo "     -f                 force reboot on dell"
 	exit 1
 }
 test -z "$1" && usage
@@ -60,6 +72,17 @@ vm_tmpl=$lib/vm_template.xml
 is_vm=0
 is_kvm=0
 is_ilo=0
+
+ipcalc_cmd=$(which ipcalc)
+if test -z "$ipcalc_cmd"; then
+	echo "ipcalc command not found, please install it."
+	exit 1
+fi
+if test $(ipcalc --help | grep -c \\-\-network) -gt 0; then
+	ipcalc_rh=1
+else
+	ipcalc_rh=0
+fi
 
 # Slurp os.dat
 let x=0
@@ -109,7 +132,12 @@ mygw=""
 anno=""
 myway=""
 noact=0
+noreset=0
+force_reboot=0
 vc=""
+efi=1
+bios=0
+skip=0
 while true
 do
 	case "$1" in
@@ -139,6 +167,14 @@ do
 		ip=$1
 		shift
 		;;
+	"-B")
+		bios=$1
+		shift
+		;;
+	"-E")
+		efi=1
+		shift
+		;;
 	"-I")
 		shift
 		user_nic=$1
@@ -147,6 +183,11 @@ do
 	"-N")
 		shift
 		user_net=$1
+		shift
+		;;
+	"-U")
+		shift
+		user_url=$1
 		shift
 		;;
 	"-v")
@@ -164,6 +205,11 @@ do
 		mygw=$1
 		shift
 		;;
+	"-m")
+		shift
+		mynm=$1
+		shift
+		;;
 	"-u")
 		shift
 		ilo_user=$1
@@ -172,6 +218,10 @@ do
 		;;
 	"-r")
 		noact=1
+		shift
+		;;
+	"-R")
+		noreset=1
 		shift
 		;;
 	"-s")
@@ -183,6 +233,10 @@ do
 	"-w")
 		shift
 		myway=$1
+		shift
+		;;
+	"-S")
+		skip=1
 		shift
 		;;
 	"-o")
@@ -209,6 +263,10 @@ do
 		echo "Builder version $version"
 		exit 0
 		;;
+	"-f")
+		shift
+		force_reboot=1
+		;;
 	"-h")
 		echo "Builder version $version"
 		usage;;
@@ -217,6 +275,7 @@ do
 	esac
 done
 test `echo "$1" | grep -c '^\-'` -gt 0 && usage
+test $bios -eq 1 && efi=0
 
 if test -z "$ip"; then
 	name=$(host "$1" | grep 'has address' | head -1 | awk '{ print $1 }')
@@ -249,6 +308,53 @@ fi
 test -n "$vlan" && VLSTR=", VLAN: $vlan"
 echo "Hostname: $name, IP: $ip$VLSTR"
 
+function ip_to_int {
+	local readonly ip_addr="${1}"
+	local ip_1 ip_2 ip_3 ip_4
+
+	ip_1=$(echo "${ip_addr}" | cut -d'.' -f1)
+	ip_2=$(echo "${ip_addr}" | cut -d'.' -f2)
+	ip_3=$(echo "${ip_addr}" | cut -d'.' -f3)
+	ip_4=$(echo "${ip_addr}" | cut -d'.' -f4)
+
+	echo "$(( ip_1 * 256**3 + ip_2 * 256**2 + ip_3 * 256 + ip_4 ))"
+}
+
+function in_subnet() {
+	# Determine whether IP address is in the specified subnet.
+	#
+	# Args:
+	#   cidr_subnet: Subnet, in CIDR notation.
+	#   ip_addr: IP address to check.
+	#
+	# Returns:
+	#   0|1
+	#
+	local readonly cidr_subnet="${1}"
+	local readonly ip_addr="${2}"
+	local subnet_ip cidr_mask netmask ip_addr_subnet subnet rval
+
+	subnet_ip=$(echo "${cidr_subnet}" | cut -d'/' -f1)
+	cidr_mask=$(echo "${cidr_subnet}" | cut -d'/' -f2)
+
+	netmask=$(( 0xFFFFFFFF << $(( 32 - ${cidr_mask} )) ))
+
+	# Apply netmask to both the subnet IP and the given IP address 
+	ip_addr_subnet="$(( netmask & $(ip_to_int ${ip_addr}) ))"
+	subnet="$(( netmask & $(ip_to_int ${subnet_ip}) ))"
+
+	# Subnet IPs will match if given IP address is in CIDR subnet
+#	[ "${ip_addr_subnet}" == "${subnet}" ] && rval=0 || rval=1
+	if test ${ip_addr_subnet} -eq ${subnet}; then
+		rval=0
+	else
+		rval=1
+	fi
+
+#	echo "rval: $rval"
+	return $rval
+}
+
 # Get PV server
 OIFS="$IFS"
 IFS="." read -a ipa <<<$(echo $ip)
@@ -258,14 +364,20 @@ prefix=24
 while read -r pv_subnet pv_way pv_sys_way pv_ilo_way pv_gw pv_ns
 do
 	test $(echo "$pv_subnet" | grep -c '^#') -gt 0 && continue
+	if test -n "$pv_subnet"; then
+		if in_subnet "$pv_subnet" "$ip"; then
+			found=1
+		fi
+		if test $found -eq 0; then
+			if test -n "$user_net"; then
+				if in_subnet "$pv_subnet" "$user_net"; then
+					found=1
+				fi
+			fi
+		fi
+	fi
 	pv_size=$(echo "$pv_subnet" | awk -F/ '{ print $2 }')
 	pv_subnet=$(echo "$pv_subnet" | awk -F/ '{ print $1 }')
-#	echo "subnet: $pv_subnet, pv_size: $pv_size, way: $pv_way, sys_way: $pv_sys_way, ilo_way: $pv_ilo_way, pv_gw: $pv_gw"
-	if test $(echo "$user_net" | grep -w -c "$pv_subnet") -gt 0; then
-		found=1
-	elif test $(echo "$ip" | grep -w -c "$pv_subnet") -gt 0; then
-		found=1
-	fi
 	test $found -eq 1 && break
 done < $lib/builder_pv.dat
 if test $found -eq 1; then
@@ -276,29 +388,45 @@ if test $found -eq 1; then
 	ns=$pv_ns
 fi
 IFS="$OIFS"
-test -z "$ns" && ns=192.168.1.1
+test -z "$ns" && ns=10.5.205.11
 
 if test $(echo $ip | grep -ic 'dhcp') -eq 0; then
 	# For VM builds
-	network=$(ipcalc --network $ip/$prefix | awk -F= '{ print $2 }' | sed 's:\.0::g')
-	# Get mask
-	netmask=$(ipcalc --netmask $ip/$prefix | awk -F= '{ print $2 }')
-	# Find GW
-	bcast=$(ipcalc --broadcast $ip/$prefix | awk -F= '{ print $2 }')
+#	echo "ipcalc: $ipcalc_cmd, rh: $ipcalc_rh"
+	if test $ipcalc_rh -eq 1; then
+		network=$($ipcalc_cmd --network $ip/$prefix | awk -F= '{ print $2 }' | sed 's:\.0::g')
+		# Get mask
+		netmask=$($ipcalc_cmd --netmask $ip/$prefix | awk -F= '{ print $2 }')
+		# Find GW
+		bcast=$($ipcalc_cmd --broadcast $ip/$prefix | awk -F= '{ print $2 }')
+	else
+		$ipcalc_cmd $ip/$prefix > $tmp 2>/dev/null
+		network=$(cat $tmp | grep ^Network | awk '{ print $2 }' | awk -F/ '{ print $1 }')
+		netmask=$(cat $tmp | grep ^Netmask | awk '{ print $2 }')
+		bcast=$(cat $tmp | grep ^Broadcast | awk '{ print $2 }')
+	fi
 	n=$(echo $bcast | awk -F. '{ print $4 }')
 	((n--))
 	s=$(echo $bcast | awk -F. '{ print $1"."$2"."$3 }')
 	if test -0 -eq 1; then
-	if ! $(ping -c 2 -W 2 ${s}.${n} > /dev/null 2>&1); then
-		n=1
 		if ! $(ping -c 2 -W 2 ${s}.${n} > /dev/null 2>&1); then
-			echo "error: unable to determine GW!"
-			exit 1
+			n=1
+			if ! $(ping -c 2 -W 2 ${s}.${n} > /dev/null 2>&1); then
+				echo "error: unable to determine GW!"
+				exit 1
+			fi
 		fi
 	fi
+	if test -n "$pv_gw"; then
+		gw=$pv_gw
+	else
+		gw=${s}.${n}
 	fi
-	gw=${s}.${n}
 fi
+#exit 0
+test -n "$mygw" && gw=$mygw
+test -n "$mynm" && netmask="$mynm"
+echo "Network: $network, netmask: $netmask, bcast: $bcast, gw: $gw"
 #exit 0
 
 test -n "$myway" && way="$myway"
@@ -387,6 +515,10 @@ elif test `echo $ilo | grep -c +` -gt 0; then
 		fi
 	fi
 	vcuser=`cat /usr/local/etc/.vim | grep ^$vc | awk '{ print $2 }'`
+	if test -z "$vcuser"; then
+		echo "unable to get vcuser for $vc"
+		exit 1
+	fi
 	vcpass=`vim_cred -x -s "$vc" -u "$vcuser"`
 else
 	# Get console ip
@@ -412,13 +544,13 @@ else
 			fi
 		fi
 	fi
-	ilo_ver=`$tools/detect_ilo $ilo`
+	ilo_ver=`$tools/detect_ilo -u "$ilo_user" -p "$ilo_pass" $ilo | awk '{ print $1 }'`
 	if test `echo $ilo_ver | awk -F, '{ print $1 }'` -eq 0; then
-		ilo_ver=$($tools/detect_drac -u "$dracuser" -p "$(echo $dracpass | base64 -d)" $ilo)
+		ilo_ver=$($tools/detect_drac -u "$dracuser" -p "$dracpass" $ilo)
 	else
 		# Upgrade iLO, if necessary
 		is_ilo=1
-		$tools/check_ilo $ilo
+		$tools/check_ilo -u "$ilo_user" -p "$ilo_pass" $ilo
 		test $? -ne 0 && exit 1
 	fi
 	if test `echo $ilo_ver | awk -F, '{ print $1 }'` -eq 0; then
@@ -429,18 +561,12 @@ else
 fi
 
 # Get iso url based on os profile
-if test "$osp" = "spp"; then
-	echo "Setting ISO to current_spp.iso"
-	url="http://$way/LinuxCOE/iso/current_spp.iso"
-elif test "$osp" = "sppg7"; then
-	echo "Setting ISO to current_sppg7.iso"
-	url="http://$way/LinuxCOE/iso/current_sppg7.iso"
-elif test "$osp" = "sppg8"; then
-	echo "Setting ISO to current_sppg8.iso"
-	url="http://$way/LinuxCOE/iso/current_sppg8.iso"
-elif test "$osp" = "rescue"; then
-	echo "Setting ISO to rescue.iso"
-	url="http://$way/LinuxCOE/iso/rescue.iso"
+if test -n "$user_url"; then
+	echo "Setting ISO to $user_url"
+	url="$user_url"
+elif test "$dist" = "iso"; then
+	echo "Setting ISO to $ver"
+	url="http://$way/LinuxCOE/iso/$ver"
 else
 	test -n "$osver" && ver="$osver"
 	test -n "$osprofile" && profile="$osprofile"
@@ -449,12 +575,16 @@ else
 	echo "Generating ISO..."
 	#<hostname> <distro> <version> <arch> [<way> <profile> <ip> <vlan> <netmask> <gateway> <nameserver>]
 	test -n "$user_nic" && NIC="-I $user_nic"
-	if test -n "$sys_way"; then
-		eval $tools/getiso $NIC -w $way $name $dist $ver $arch $sys_way $profile $ip $vlan $netmask $gw $ns > $tmp 2>&1
-	else 
-		eval $tools/getiso $NIC $name $dist $ver $arch $way $profile $ip $vlan $netmask $gw $ns > $tmp 2>&1
-	fi
-	url=`cat $tmp | grep ^URL= | awk -F= '{ print $2 }'`
+#	if test "$dist" = "Windows"; then
+#		$tools/getwiniso $way $name $ip $gw > $tmp 2>&1
+#	else
+		if test -n "$sys_way"; then
+			eval $tools/getiso $NIC -w $way $name $dist $ver $arch $sys_way $profile $ip $vlan $netmask $gw $ns > $tmp 2>&1
+		else 
+			eval $tools/getiso $NIC $name $dist $ver $arch $way $profile $ip $vlan $netmask $gw $ns > $tmp 2>&1
+		fi
+#	fi
+	url="$(cat $tmp | grep ^URL= | awk -F= '{ print $2 }')"
 	echo "url: $url" >> $logfile
 	if test -z "$url"; then
 		echo "ERROR: unable to get ISO for $shortname! reason:"
@@ -628,7 +758,7 @@ elif test $is_kvm -eq 1; then
 #		--graphics vnc,listen=0.0.0.0 --noautoconsole \
 #		--cdrom=/scratch/systemdesigner/$iso
 elif test $is_vm -eq 1; then
-	echo "Creating VM..."
+#	echo "Creating VM..."
 	hwver="vmx-07"
         m=`echo "$g 1024 * p" | dc`
 	for hd in 1 2 3 4; do
@@ -651,7 +781,7 @@ elif test $is_vm -eq 1; then
 		-e "s:+DC+:$dc:" -e "s:+CLUST+:$cl:" \
 		-e "s:+VCPU+:$c:" -e "s:+MEM+:$m:" -e "s:+OSSIZE+:$os_size:" \
 		-e "s:+HD1SIZE+:${hd[1]}:" -e "s:+HD2SIZE+:${hd[2]}:" -e "s:+HD3SIZE+:${hd[3]}:" -e "s:+HD4SIZE+:${hd[4]}:" \
-		-e "s:+NIC+:$nic:" -e "s:+NET+:$net:" -e "s:+ID+:$id:" -e "s:+ISO+:$iso:" \
+		-e "s:+NIC+:$nic:" -e "s/+NET+/$net/" -e "s:+ID+:$id:" -e "s:+ISO+:$iso:" \
 		-e "s:+ANN+:$a:" -e "s:+PROFILE+:$osp:" -e 's:+SERVER+:$vc:' > $tmp
 		$tools/create_vms.pl --server $vc --username "$vcuser" --password "$vcpass" --opts "$opts" --file $tmp
 	if test $? -ne 0; then
@@ -677,12 +807,12 @@ else
 			waitpower 0
 			go=$?
 		done
-		if test "$osprofile" = "efi"; then
+		if test $efi -eq 1; then
 			ilocmd 0 $lib/uefi.xml
 		else
 			ilocmd 0 $lib/legacy.xml
 		fi
-		echo "Mounting Image..."
+		echo "Mounting Image: $url"
 		cat $lib/mount.xml | sed "s|_URL_|$url|" > $tmp
 		ilocmd 1 $tmp
 #		set_bo
@@ -697,19 +827,22 @@ else
 			waitpower 1
 		fi
 	else
-		DODRAC="$RAC -r $ilo -u $dracuser -p $(echo $dracpass | base64 -d)"
 		dracver=$(echo $ilo_ver | awk -F, '{ print $1 }')
+		test -z "$dracver" && dracver=4
+#		echo "dracver: $dracver"
+		DODRAC="$RAC -r $ilo -u $dracuser -p $(echo $dracpass | base64 -d)"
+set_idrac() {
 #		if test -n "$dracver"; then
 #			$DODRAC fwupdate -p -u -d <Path to folder where firmimg.d6 image available>
 #		fi
-		test -z "$dracver" && dracver=4
-#		echo "DRACver: $dracver"
 		echo "Clearing job que..."
 		$DODRAC jobqueue delete --all > /dev/null 2>&1
 #		XXX do this if it says "PENDING JOBS even after clear"
 #		$DODRAC jobqueue delete -i JID_CLEARALL_FORCE > /dev/null 2>&1
 #		sleep 120
 #		$DODRAC racreset
+                echo "Disabling Integrated SD..."
+                $DODRAC set bios.IntegratedDevices.InternalSdCard Off > /dev/null 2>&1
                 echo "Creating virtual disk (if not present)..."
                 cont=$($DODRAC storage get controllers 2>/dev/null| tr '\r' '\n' | grep ^RAID)
                 if test -n "$cont"; then
@@ -731,11 +864,14 @@ else
 				fi
 			fi
 		fi
-		echo "Getting BIOS boot mode..."
-                $DODRAC get BIOS.BiosBootSettings.BootMode > $tmplog 2>/dev/null
-		test $? -ne 0 && dracerr
-		mode=$(cat $tmplog | tr '\r' '\n' | grep ^BootMode= | awk -F= '{ print $2 }' | awk '{ print $1 }')
+		to_efi=0
+		to_bios=0
 		if test "$mode" = "Uefi"; then
+			test $efi -eq 0 && to_bios=1
+		else
+			test $efi -eq 1 && to_efi=1
+		fi
+		if test $to_bios -eq 1; then
 			echo "Setting Boot Mode to BIOS..."
 			$DODRAC clearpending BIOS.Setup.1-1 > /dev/null 2>&1
 			$DODRAC set BIOS.BiosBootSettings.BootMode Bios > $tmplog 2>&1
@@ -744,42 +880,114 @@ else
 			dwaitmode Bios
 			test $? -ne 0 && dracerr
 			sleep 30
+		elif test $to_efi -eq 1; then
+			echo "Setting Boot Mode to EFI..."
+			$DODRAC clearpending BIOS.Setup.1-1 > /dev/null 2>&1
+			$DODRAC set BIOS.BiosBootSettings.BootMode Uefi > $tmplog 2>&1
+			test $? -ne 0 && dracerr
+			mkdjob BIOS.Setup.1-1 -r pwrcycle -s TIME_NOW
+			dwaitmode Uefi
+			test $? -ne 0 && dracerr
+			sleep 30
 		fi
 		echo "Setting HDD boot order..."
-#			$DODRAC set bios.BiosBootSettings.UefiBootSeq RAID.Integrated.1-1 > $tmplog 2>&1
-		if test $dracver -gt 2; then
-			$DODRAC set BIOS.BiosBootSettings.HddSeq RAID.Integrated.1-1,Disk.SDInternal.1-1 > $tmplog 2>&1
+		if test "$mode" = "Uefi"; then
+			$DODRAC get BIOS.BiosBootSettings.UefiBootSeq > $tmplog 2>&1
+			if test $? -eq 0; then
+				cb=$(cat $tmplog | dos2unix | grep ^UefiBootSeq | awk -F= '{ print $2 }')
+				if test -z "$cb"; then
+					echo "error: cb is empty!"
+					cat $tmplog
+					exit 1
+				fi
+				case "$cb" in
+				RAID.SL*)
+					;;
+				*)
+					$DODRAC set bios.BiosBootSettings.UefiBootSeq RAID.Integrated.1-1 > $tmplog 2>&1
+					test $? -ne 0 && dracerr
+					;;
+				esac
+			fi
 		else
-			$DODRAC set bios.BiosBootSettings.HddSeq RAID.Integrated.1-1 > $tmplog 2>&1
+			$DODRAC get bios.BiosBootSettings.HddSeq > $tmplog 2>&1
+			if test $? -eq 0; then
+				cb=$(cat $tmplog | dos2unix | grep ^HddSeq | awk -F= '{ print $2 }')
+				if test -z "$cb"; then
+					echo "error: cb is empty!"
+					cat $tmplog
+					exit 1
+				fi
+				case "$cb" in
+					AHCI.Integrated.1-1|RAID.SL.*|RAID.Integrated.1-1)
+					;;
+				*)
+					$DODRAC set BIOS.BiosBootSettings.HddSeq RAID.Integrated.1-1,Disk.SDInternal.1-1 > $tmplog 2>&1
+					test $? -ne 0 && $DODRAC set bios.BiosBootSettings.HddSeq RAID.Integrated.1-1 > $tmplog 2>&1
+					test $? -ne 0 && $DODRAC set bios.BiosBootSettings.HddSeq Disk.SDInternal.1-1> $tmplog 2>&1
+					test $? -ne 0 && dracerr
+					;;
+				esac
+			fi
 		fi
-		test $? -ne 0 && dracerr
 		echo "Setting OneTimeBoot Mode..."
 		if test $dracver -ge 3; then
-			$DODRAC set BIOS.OneTimeBoot.OneTimeBootMode OneTimeBootSeq > $tmplog 2>&1
+			if test "$mode" = "Uefi"; then
+				$DODRAC set BIOS.OneTimeBoot.OneTimeBootMode OneTimeUefiBootSeq > $tmplog 2>&1
+			else
+				$DODRAC set BIOS.OneTimeBoot.OneTimeBootMode OneTimeBootSeq > $tmplog 2>&1
+			fi
 		else
 			$DODRAC set idrac.serverboot.BootOnce 1 > $tmplog 2>&1
 		fi
 		test $? -ne 0 && dracerr
+
 		echo "Setting OneTimeBoot device to DVD..."
 		$DODRAC set idrac.serverboot.FirstBootDevice VCD-DVD > $tmplog 2>&1
 		$DODRAC set BIOS.OneTimeBoot.OneTimeBootSeqDev Optical.iDRACVirtual.1-1 > $tmplog 2>&1
 #		test $? -ne 0 && dracerr
+
+		echo "Disabling embeded NIC (if any)"
+#		$DODRAC set BIOS.IntegratedDevices.IntegratedNetwork1 Enabled > $tmplog 2>&1
+		$DODRAC set BIOS.IntegratedDevices.EmbNic1Nic2 DisabledOs > $tmplog 2>&1
+
+		echo "Disabling TPM"
+		$DODRAC set BIOS.SysSecurity.TpmSecurity Off > $tmplog 2>&1
+}
+		if test $skip -eq 0; then
+			echo "Getting BIOS boot mode..."
+			$DODRAC get BIOS.BiosBootSettings.BootMode > $tmplog 2>/dev/null
+			test $? -ne 0 && dracerr
+			mode=$(cat $tmplog | tr '\r' '\n' | grep ^BootMode= | awk -F= '{ print $2 }' | awk '{ print $1 }')
+			echo "user_url: $user_url, dist: $dist"
+			do_set_idrac=0
+			([ "$user_url" = "" ] && [ "$dist" != "iso" ] && [ $skip -eq 0 ]) && do_set_idrac=1
+			test $skip -eq 1 && do_set_idrac=0
+			if test $do_set_idrac -eq 1; then
+				set_idrac
+			else
+				echo "Setting OneTimeBoot Mode..."
+				if test $dracver -ge 3; then
+					if test "$mode" = "Uefi"; then
+						$DODRAC set BIOS.OneTimeBoot.OneTimeBootMode OneTimeUefiBootSeq > $tmplog 2>&1
+					else
+						$DODRAC set BIOS.OneTimeBoot.OneTimeBootMode OneTimeBootSeq > $tmplog 2>&1
+					fi
+				else
+					$DODRAC set idrac.serverboot.BootOnce 1 > $tmplog 2>&1
+				fi
+				test $? -ne 0 && dracerr
+			fi
+		fi
+
 		echo "Disconnecting any connected image..."
 		$DODRAC remoteimage -d > $tmplog 2>&1
 		test $? -ne 0 && dracerr
 		sleep 5
 		echo "Mounting Image..."
-#		Deploy a remote image on iDRAC CIFS Share
-#		racadm remoteimage -c -u admin -p xxx -l //192.168.0.32/dev/OM840.iso
-#		Deploy a remote image on iDRAC NFS Share.
-#		racadm remoteimage -c -u root -p password -l '192.168.1.113:/opt/nfs/OM840.iso
-#		Deploy a remote image on iDRAC HTTP Share.
-#		racadm remoteinage -c -u "user" -p "xxx" -l http://shrloc/foo.iso
-#		Deploy a remote image on iDRAC HTTPS Share.
-#		racadm remoteinage -c -u "user" -p "xxx" -l https://shrloc/foo.iso
 		case $dell_mount_type in
 		cifs)
-			image=`echo $url | sed "s+^http:++" | sed "s:/sysdes/:/coe_install/:"`
+			image=$(echo $url | sed 's+^http:++' | sed 's:/LinuxCOE::' | sed 's:/sysdes/:/coe_install/:')
 			;;
 		nfs)
 			image=$(echo $url | sed "s+^http://++" | sed 's+/sysdes/+:/coe_images/+')
@@ -793,13 +1001,18 @@ else
 		esac
 		$DODRAC remoteimage -c -u none -p none -l "$image" > $tmplog 2>&1
 		test $? -ne 0 && dracerr
-		echo "Resetting system..."
-		if test $dracver -ge 3; then
-			mkdjob BIOS.Setup.1-1 -r pwrcycle -s TIME_NOW
-		else
-#			-f only available on the VRTX
-#			$DODRAC serveraction hardreset -f
-			$DODRAC serveraction hardreset
+		if test $noreset -eq 0; then
+			echo "Resetting system..."
+			test -z "$dracver" && dracver=0
+			if test $dracver -ge 3; then
+				mkdjob BIOS.Setup.1-1 -r pwrcycle -s TIME_NOW
+			else
+				if test $force_reboot -eq 1; then
+					$DODRAC serveraction hardreset -f
+				else
+					$DODRAC serveraction hardreset
+				fi
+			fi
 		fi
 	fi
 fi

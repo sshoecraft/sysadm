@@ -55,7 +55,8 @@ static list get_field_info(HSTMT hstmt, TABLE *table) {
 
 	dprintf("name: %s\n", table->name);
 
-	ret = SQLColumns(hstmt, 0,0,(SQLCHAR *) table->schema, SQL_NTS, (SQLCHAR *) table->name, SQL_NTS,0,0);
+//	ret = SQLColumns(hstmt, 0,0,(SQLCHAR *) table->schema, SQL_NTS, (SQLCHAR *) table->name, SQL_NTS,0,0);
+	ret = SQLColumns(hstmt, 0,0,0, SQL_NTS, (SQLCHAR *) table->name, SQL_NTS,0,0);
 	dprintf("SQLColumns ret: %d\n", ret);
 	if (ret != SQL_SUCCESS) {
 		dberr(SQL_HANDLE_STMT,hstmt,"get_field_info");

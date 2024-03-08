@@ -22,23 +22,6 @@ endif
 #CFLAGS=-I. -DVOL $(DEBUG) $(LINUX)
 #CFLAGS+=-DSCAN_ALL
 
-#ESX_SERVER=d3w0605
-#ESX_SERVER=g3t0029h.houston.hp.com
-#ESX_SERVER=g3t0001h.houston.hp.com
-#ESX_SERVER=g4t0325h
-#VG_SERVER=g3t0016.houston.hp.com
-#VG_SERVER=lxcl7n1.cv.hp.com
-#VG_SERVER=g1t0002.austin.hp.com
-#VG_SERVER=g4t0098c.houston.hp.com
-#DG_SERVER=g5t0369g.atlanta.hp.com
-#WIN32_SERVER=stevexp.iamericas.itest.hpqcorp.net
-
-# has HSV210
-#g1t0228h.austin.hp.com
-
-# Lots of HSV
-#d9t0025
-
 all: $(PROG)
 #	pbrun ksh -c './xplist -d'
 #	sudo ./xplist
@@ -48,8 +31,6 @@ all: $(PROG)
 #	time ssh -n -q -o BatchMode=yes $(VG_SERVER) "sudo /tmp/xplist -n"
 #	scp xplist $(DG_SERVER):/tmp
 #	time ssh -n -q -o BatchMode=yes $(DG_SERVER) "sudo /tmp/xplist -n"
-#	scp xplist ganymede.bpo.hp.com:/tmp
-#	time ssh -n -q -o BatchMode=yes ganymede.bpo.hp.com "sudo /usr/local/bin/xplist -n"
 #	scp -i ~/.ssh/stevexp.key $(PROG) Steve@stevexp:/data
 #	ssh -i ~/.ssh/stevexp.key -n -q -o BatchMode=yes Steve@stevexp "/data/xplist"
 
